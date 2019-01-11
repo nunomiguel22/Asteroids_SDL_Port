@@ -111,8 +111,8 @@ void Bitmap::draw(int x, int y) {
 			uint32_t color = (imgStartPos[(i * width * 3) + (j * 3 + 2)] << 16);
 			color += (imgStartPos[(i * width * 3) + (j * 3 + 1)] << 8);
 			color += (imgStartPos[(i * width * 3) + (j * 3)]);
-			if (color != COLOR_IGNORED)
-				if (draw_pixel(x + j, y + height - i, color))
+			if (color && color != COLOR_IGNORED && i < height - 1)
+				if (draw_pixel(x + j, y + height - i - 1, color))
 					continue;
 		}
 }
@@ -194,72 +194,50 @@ void Pixmap::draw(int gx, int gy, double rotation_degrees) {
 
 int load_bitmaps(bitmap_data *bmp) {
 
-	bmp->menu.load("textures/menu.bmp");
-	if (bmp->menu.getBitmapData() == NULL)
-		return 1;
-	bmp->options.load("textures/options.bmp");
-	if (bmp->options.getBitmapData() == NULL)
-		return 1;
-	bmp->boxticked.load("textures/boxticked.bmp");
-	if (bmp->boxticked.getBitmapData() == NULL)
-		return 1;
-	bmp->game_background.load("textures/gamebackground.bmp");
-	if (bmp->game_background.getBitmapData() == NULL)
-		return 1;
-	bmp->host_connecting.load("textures/hostconnecting.bmp");
-	if (bmp->host_connecting.getBitmapData() == NULL)
-		return 1;
-	bmp->client_connecting.load("textures/clientconnecting.bmp");
-	if (bmp->client_connecting.getBitmapData() == NULL)
-		return 1;
-	bmp->connected.load("textures/connected.bmp");
-	if (bmp->connected.getBitmapData() == NULL)
-		return 1;
-	bmp->pause_message.load("textures/pausemessage.bmp");
-	if (bmp->pause_message.getBitmapData() == NULL)
-		return 1;
-	bmp->splash.load("textures/splash.bmp");
-	if (bmp->splash.getBitmapData() == NULL)
-		return 1;
-	bmp->death_screen.load("textures/deathscreen.bmp");
-	if (bmp->death_screen.getBitmapData() == NULL)
-		return 1;
-	bmp->death_screen_highscore.load("textures/deathscreenhighscore.bmp");
-	if (bmp->death_screen_highscore.getBitmapData() == NULL)
-		return 1;
-	bmp->score_header.load("textures/score_header.bmp");
-	if (bmp->score_header.getBitmapData() == NULL)
-		return 1;
-	bmp->hp_header.load("textures/hp_header.bmp");
-	if (bmp->hp_header.getBitmapData() == NULL)
-		return 1;
-	bmp->hp_header_low.load("textures/hp_header_low.bmp");
-	if (bmp->hp_header_low.getBitmapData() == NULL)
-		return 1;
-	bmp->fps_header.load("textures/fps_header.bmp");
-	if (bmp->fps_header.getBitmapData() == NULL)
-		return 1;
-	bmp->teleport_ready_header.load("textures/jmpheaderrdy.bmp");
-	if (bmp->teleport_ready_header.getBitmapData() == NULL)
-		return 1;
-	bmp->teleport_not_ready_header.load("textures/jmpheadernotrdy.bmp");
-	if (bmp->teleport_not_ready_header.getBitmapData() == NULL)
-		return 1;
-	bmp->medium_score.load("textures/mediumscore.bmp");
-	if (bmp->medium_score.getBitmapData() == NULL)
-		return 1;
-	bmp->large_score.load("textures/largescore.bmp");
-	if (bmp->large_score.getBitmapData() == NULL)
-		return 1;
-	bmp->alien_score.load("textures/alienscore.bmp");
-	if (bmp->alien_score.getBitmapData() == NULL)
-		return 1;
-	bmp->mp_win_screen.load("textures/mpwinscreen.bmp");
-	if (bmp->mp_win_screen.getBitmapData() == NULL)
-		return 1;
-	bmp->mp_loss_screen.load("textures/mplossscreen.bmp");
-	if (bmp->mp_loss_screen.getBitmapData() == NULL)
-		return 1;
+	while (bmp->menu.load("textures/menu.bmp"))
+		bmp->menu.load("textures/menu.bmp");
+	while (bmp->options.load("textures/options.bmp"))
+		bmp->options.load("textures/options.bmp");
+	while (bmp->boxticked.load("textures/boxticked.bmp"))
+		bmp->boxticked.load("textures/boxticked.bmp");
+	while (bmp->game_background.load("textures/gamebackground.bmp"))
+		bmp->game_background.load("textures/gamebackground.bmp");
+	while (bmp->host_connecting.load("textures/hostconnecting.bmp"))
+		bmp->host_connecting.load("textures/hostconnecting.bmp");
+	while (bmp->client_connecting.load("textures/clientconnecting.bmp"))
+		bmp->client_connecting.load("textures/clientconnecting.bmp");
+	while (bmp->connected.load("textures/connected.bmp"))
+		bmp->connected.load("textures/connected.bmp");
+	while (bmp->pause_message.load("textures/pausemessage.bmp"))
+		bmp->pause_message.load("textures/pausemessage.bmp");
+	while (bmp->splash.load("textures/splash.bmp"))
+		bmp->splash.load("textures/splash.bmp");
+	while (bmp->death_screen.load("textures/deathscreen.bmp"))
+		bmp->death_screen.load("textures/deathscreen.bmp");
+	while (bmp->death_screen_highscore.load("textures/deathscreenhighscore.bmp"))
+		bmp->death_screen_highscore.load("textures/deathscreenhighscore.bmp");
+	while (bmp->score_header.load("textures/score_header.bmp"))
+		bmp->score_header.load("textures/score_header.bmp");
+	while (bmp->hp_header.load("textures/hp_header.bmp"))
+		bmp->hp_header.load("textures/hp_header.bmp");
+	while (bmp->hp_header_low.load("textures/hp_header_low.bmp"))
+		bmp->hp_header_low.load("textures/hp_header_low.bmp");
+	while (bmp->fps_header.load("textures/fps_header.bmp"))
+		bmp->fps_header.load("textures/fps_header.bmp");
+	while (bmp->teleport_ready_header.load("textures/jmpheaderrdy.bmp"))
+		bmp->teleport_ready_header.load("textures/jmpheaderrdy.bmp");
+	while (bmp->teleport_not_ready_header.load("textures/jmpheadernotrdy.bmp"))
+		bmp->teleport_not_ready_header.load("textures/jmpheadernotrdy.bmp");
+	while (bmp->medium_score.load("textures/mediumscore.bmp"))
+		bmp->medium_score.load("textures/mediumscore.bmp");
+	while (bmp->large_score.load("textures/largescore.bmp"))
+		bmp->large_score.load("textures/largescore.bmp");
+	while (bmp->alien_score.load("textures/alienscore.bmp"))
+		bmp->alien_score.load("textures/alienscore.bmp");
+	while (bmp->mp_win_screen.load("textures/mpwinscreen.bmp"))
+		bmp->mp_win_screen.load("textures/mpwinscreen.bmp");
+	while (bmp->mp_loss_screen.load("textures/mplossscreen.bmp"))
+		bmp->mp_loss_screen.load("textures/mplossscreen.bmp");
 	return 0;
 }
 
