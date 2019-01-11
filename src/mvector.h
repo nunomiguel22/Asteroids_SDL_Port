@@ -26,14 +26,14 @@ public:
 	double getY() const { return this->y; }
 
 	void setX(double x) { this->x = x; };
-	void setY(double y) { this->x = y; };
+	void setY(double y) { this->y = y; };
 
 	void print() {
 		printf("( %f , %f )\n", x, y);
 	}
 
 	double magnitude() {
-		double mag = pow(x, 2) + pow(y, 2);
+		double mag = pow(this->x, 2) + pow(this->y, 2);
 		return sqrt(mag);
 	}
 

@@ -3,6 +3,32 @@
 #include "vcard.h"
 #include <iostream>
 
+void physics_update(game_data *game) {
+
+	ast_update(game->asteroid_field);
+	ast_collision(game->asteroid_field, &game->player1, &game->alien);
+	ship_update(&game->player1);
+	if (game->alien.active) {
+		alien_update(&game->alien, &game->player1, &game->timers);
+		alien_collision(&game->alien, &game->player1, &game->timers);
+	}
+	if (game->timers.round_timer <= 30)
+		game->player1.invulnerability = true;
+	else game->player1.invulnerability = false;
+
+	if (game->player1.hp <= 0) {
+		game->player1.hp = 0;
+		game->state = LOSS;
+	}
+}
+
+void handle_frame(game_data * game) {
+
+	render_frame(game);
+	display_frame();
+	game->timers.framecounter += 1;
+}
+
 void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 
 	bckgrd->draw(0, 0);
@@ -69,7 +95,7 @@ int game_data_init(game_data *game) {
 	game->settings.fps_counter = true;
 	game->settings.fps = 1;
 	game->settings.m_sens = 1;
-	//game->alien.active = false;
+	game->alien.active = false;
 
 	load_xpms(&game->xpm);
 	if (load_bitmaps(&game->bmp))
@@ -99,9 +125,26 @@ void event_handler(game_data* game) {
 					break;
 				}
 				case SDL_KEYDOWN: {
+
+					switch (game->SDLevent.key.keysym.sym) {
+						case SDLK_w:	game->s_event = MAIN_THRUSTER;	break;
+						case SDLK_a:	game->s_event = PORT_THRUSTER;	break;
+						case SDLK_d:	game->s_event = STARBOARD_THRUSTER;	break;
+						case SDLK_s:	game->s_event = REVERSE_THRUSTER;	break;
+						case SDLK_ESCAPE:	game->s_event = K_ESC;	break;
+						case SDLK_SPACE:	game->s_event = QUIT; break;
+
+						default: game->s_event = IDLING;
+					}
+
 					game->event = KEYBOARD;
 					game_state_machine(game);
 
+
+					break;
+				}
+				case SDL_KEYUP: {
+					game->s_event = IDLING;
 					break;
 				}
 
@@ -112,7 +155,6 @@ void event_handler(game_data* game) {
 		if (currentTick - lastTick >= 17) {
 
 			game->timers.timerTick++;
-			std::cout << game->timers.timerTick << std::endl;
 			game->timers.player1_weapon_timer++;
 			game->timers.player2_weapon_timer++;
 			game->timers.alien_weapon_timer++;
@@ -196,7 +238,7 @@ void game_state_machine(game_data* game) {
 		
 		case START_SEQUENCE: {
 			if (game->event == TIMER) {
-				
+
 				if (game->timers.start_seq == 3) {
 					game->timers.timerTick = 0;
 					ship_spawn(&game->player1);
@@ -217,10 +259,146 @@ void game_state_machine(game_data* game) {
 					game->timers.start_seq--;
 				}
 			}
+			break;
+		}
+
+		case PLAYING: {
+			static int round_delay = 0;
+			playing_event_handler(game);
+
+			if (game->player1.end_round) {
+				if (game->event == TIMER)
+					round_delay++;
+
+				if (round_delay >= DELAY_BETWEEN_ROUNDS) {
+					round_delay = 0;
+					game->state = NEW_ROUND;
+				}
+			}
+			break;
+		}
+		case NEW_ROUND: {
+
+			if (game->player1.round < MAX_ASTEROIDS)
+				game->player1.round += ASTEROID_INCREASE_RATE;
+			if (game->player1.hp < PLAYER_MAX_HEALTH)
+				game->player1.hp += PLAYER_HEALTH_REGENERATION;
+			if (game->player1.hp > PLAYER_MAX_HEALTH)
+				game->player1.hp = PLAYER_MAX_HEALTH;
+
+			ast_spawn(game->asteroid_field, &game->player1);
+			int random_alien_spawn = rand() % (100 - 1) + 1;
+			if (random_alien_spawn >(100 - ((game->player1.round - STARTING_ASTEROIDS) * ALIEN_SPAWN_CHANCE_INCREASE)))
+				alien_spawn(&game->alien);
+
+			game->timers.round_timer = 0;
+			game->player1.invulnerability = true;
+			game->state = PLAYING;
 
 			break;
 		}
+		case LOSS: {
+			static bool highscore;
+			static bool first_frame = true;
+			if (first_frame) {
+				game->timers.start_seq = 3;
+				first_frame = false;
+				highscore = verify_highscores(game->highscores, &game->player1);
+			}
+			switch (game->event) {
+
+				case MOUSE: {
+
+					if (game->SDLevent.button.button == SDL_BUTTON_LEFT) {
+						if (game->SDLevent.motion.x >= 227 && game->SDLevent.motion.x <= 444 && game->SDLevent.motion.y >= 385 && game->SDLevent.motion.y <= 454) {
+							game->state = START_SEQUENCE;
+							first_frame = true;
+						break;
+						}
+						else if (game->SDLevent.motion.x >= 521 && game->SDLevent.motion.x <= 738 && game->SDLevent.motion.y >= 385 && game->SDLevent.motion.y <= 454) {
+							game->state = MENU;
+							first_frame = true;
+						}
+					}
+					break;
+				}
+
+					case TIMER: {
+					render_frame(game);
+					if (highscore)
+						handle_menu_frame(game, &game->bmp.death_screen_highscore);
+					else handle_menu_frame(game, &game->bmp.death_screen);
+					break;
+				}
+				default: break;
+			}
+			break;
+		}
+
+		case GAMEPAUSED: {
+			game->timers.start_seq = 3;
+			if (game->event == KEYBOARD) {
+				if (game->s_event == K_ESC)
+					game->state = PLAYING;
+				else if (game->s_event == QUIT)
+					game->state = MENU;
+			}
+			break;
+		}
+
 		case COMP: {return;}
+		default: break;
+	}
+}
+
+
+void playing_event_handler(game_data* game) {
+	switch (game->event) {
+
+		case KEYBOARD: {
+			ship_apply_force(&game->s_event, &game->player1);
+			if (game->s_event == K_ESC) {
+				render_frame(game);
+				game->bmp.pause_message.draw(0, 0);
+				display_frame();
+				game->state = GAMEPAUSED;
+			}
+			else if (game->s_event == QUIT)
+				game->state = COMP;
+			break;
+		}
+
+		case MOUSE: {
+			game->player1.crosshair.x = game->SDLevent.motion.x - hres / 2;
+			game->player1.crosshair.y = vres / 2 - game->SDLevent.motion.y;
+
+
+			if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->player1.weapon_ready)
+				ship_fire_laser(&game->player1, &game->timers.player1_weapon_timer);
+
+			if (game->SDLevent.button.button == SDL_BUTTON_RIGHT && game->player1.jump_ready)
+				ship_teleport(&game->player1, &game->timers.teleport_timer);
+
+			break;
+		}
+
+		case TIMER: {
+			/* Physics update */
+			if (game->timers.timerTick % PHYSICS_TICKS == 0)
+			physics_update(game);
+			/* Locked fps render */
+			if (game->settings.fps)
+				if (game->timers.timerTick % game->settings.fps == 0)
+					handle_frame(game);
+			/* Fire rate controller */
+			if (game->timers.player1_weapon_timer >= (60 / FIRE_RATE) && !(game->player1.weapon_ready))
+				game->player1.weapon_ready = true;
+			/* Jump rate controller */
+			if (game->timers.teleport_timer >= (JUMP_RATE * 60) && !(game->player1.jump_ready))
+				game->player1.jump_ready = true;
+
+			break;
+		}
 		default: break;
 	}
 }

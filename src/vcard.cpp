@@ -130,7 +130,6 @@ void draw_ship(Pixmap *xpm, player *p) {
 
 	mvector2d vmouse(p->pivot, p->crosshair);
 	mvector2d vcannon(p->pivot, p->cannon);
-	
 	if (vmouse.magnitude() > 5)
 		degrees =vmouse.angle() - 90;
 	else degrees = vmouse.angle() - 90;
@@ -138,6 +137,149 @@ void draw_ship(Pixmap *xpm, player *p) {
 	mpoint2d ws_pivot = vector_translate_gfx(&p->pivot, 1024, 768);
 
 	xpm->draw(ws_pivot.x, ws_pivot.y, degrees);
+	
+}
+
+
+
+void draw_alien(game_data *game) {
+	if (game->alien.active) {
+		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
+		mvector2d vcannon (game->alien.pivot, game->alien.cannon);
+		game->xpm.alien_ship.draw(ws_pivot.x, ws_pivot.y, vcannon.angle() - 90);
+
+		//Draw alien lasers
+		for (int i = 0; i < AMMO; i++) {
+			if (game->alien.lasers[i].active) {
+				mpoint2d ws_laser = vector_translate_gfx(&game->alien.lasers[i].position, 1024, 768);
+				game->xpm.red_laser.draw(ws_laser.x, ws_laser.y, 0);
+			}
+		}
+	}
+
+	else if (game->timers.alien_death_timer > 0) {
+		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
+		if (game->timers.alien_death_timer > 20) {
+			game->xpm.asteroid_dest1.draw (ws_pivot.x, ws_pivot.y, false);
+			game->bmp.alien_score.draw (ws_pivot.x + 10, ws_pivot.y - 35);
+		}
+		else if (game->timers.alien_death_timer > 10) {
+			game->xpm.asteroid_dest2.draw(ws_pivot.x, ws_pivot.y, false);
+			game->bmp.alien_score.draw(ws_pivot.x + 10, ws_pivot.y - 35);
+		}
+		else {
+			game->xpm.asteroid_dest3.draw(ws_pivot.x, ws_pivot.y, false);
+			game->bmp.alien_score.draw(ws_pivot.x + 10, ws_pivot.y - 35);
+		}
+	}
+}
+
+
+void draw_ast(asteroid *ast, Pixmap *xpm) {
+
+	mpoint2d ws_ast = vector_translate_gfx(&ast->position, 1024, 768);
+	xpm->draw(ws_ast.x, ws_ast.y, ast->degrees);
+
+	if (ast->degrees >= 360)
+		ast->degrees -= 360;
+	else ast->degrees++;
+
+}
+
+void render_frame(game_data *game) {
+
+	game->bmp.game_background.draw(0, 0);
+
+	mpoint2d ws_mouse = vector_translate_gfx(&game->player1.crosshair, 1024, 768);
+	game->xpm.crosshair.draw(ws_mouse.x, ws_mouse.y, 0);
+	switch (game->s_event) {
+
+		case MAIN_THRUSTER: {
+			draw_ship(&game->xpm.ship_blue_bt, &game->player1);
+			break;
+		}
+		case PORT_THRUSTER: {
+			draw_ship(&game->xpm.ship_blue_st, &game->player1);
+			break;
+		}
+		case STARBOARD_THRUSTER: {
+			draw_ship(&game->xpm.ship_blue_pt, &game->player1);
+			break;
+		}
+		case IDLING: {
+			draw_ship(&game->xpm.ship_blue, &game->player1);
+			break;
+		}
+		default: {
+			draw_ship(&game->xpm.ship_blue, &game->player1);
+			break;
+		}
+
+	}
+
+	//Draw lasers
+	for (int i = 0; i < AMMO; i++) {
+		if (game->player1.lasers[i].active) {
+			mpoint2d ws_laser = vector_translate_gfx(&game->player1.lasers[i].position, 1024, 768);
+			game->xpm.blue_laser.draw(ws_laser.x, ws_laser.y, 0);
+		}
+	}
+
+	//Draw Asteroids
+	for (int i = 0; i < MAX_ASTEROIDS; i++) {
+		mpoint2d ws_ast = vector_translate_gfx(&game->asteroid_field[i].position, 1024, 768);
+		//Active asteroids
+		if (game->asteroid_field[i].active) {
+			if (game->asteroid_field[i].size == MEDIUM)
+				draw_ast(&game->asteroid_field[i], &game->xpm.asteroid_medium);
+			else draw_ast(&game->asteroid_field[i], &game->xpm.asteroid_large);
+
+		}
+		//Destruction animation
+		else {
+			Bitmap temp;
+			if (game->asteroid_field[i].size == MEDIUM)
+				temp = game->bmp.medium_score;
+			else temp = game->bmp.large_score;
+
+			if (game->asteroid_field[i].death_timer > 20) {
+				game->xpm.asteroid_dest1.draw(ws_ast.x, ws_ast.y, false);
+				temp.draw(ws_ast.x + 10, ws_ast.y - 35);
+			}
+			else if (game->asteroid_field[i].death_timer > 10) {
+				game->xpm.asteroid_dest2.draw(ws_ast.x, ws_ast.y, false);
+				temp.draw(ws_ast.x + 10, ws_ast.y - 35);
+			}
+			else if (game->asteroid_field[i].death_timer > 0) {
+				game->xpm.asteroid_dest3.draw(ws_ast.x, ws_ast.y, false);
+				temp.draw(ws_ast.x + 10, ws_ast.y - 35);
+			}
+		}
+
+	}
+
+	//Draw FPS counter
+	/*if (game->settings.fps_counter) {
+		game->bmp.fps_header.draw(912, 3);
+		draw_number(game->timers.frames_per_second, 970, 17, game);
+	}*/
+
+	//Draw Score
+	game->bmp.score_header.draw (10, 4);
+	draw_number(game->player1.score, 80, 17, game);
+
+	//Draw_HP
+	if (game->player1.hp > 30)
+		game->bmp.hp_header.draw (130, 4);
+	else game->bmp.hp_header_low.draw(130, 4);
+	draw_number(game->player1.hp, 175, 17, game);
+
+	//Draw Teleport Header
+	if (game->player1.jump_ready)
+		game->bmp.teleport_ready_header.draw(220, 4);
+	else game->bmp.teleport_not_ready_header.draw(220, 4);
+
+	draw_alien(game);
 }
 
 

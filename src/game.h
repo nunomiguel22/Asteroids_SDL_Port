@@ -4,6 +4,7 @@
 #include "graphics.h"
 #include "macros.h"
 #include "ship.h"
+#include "asteroidfield.h"
 
 typedef enum { KEYBOARD, MOUSE, TIMER} event_type;
 
@@ -25,7 +26,7 @@ typedef struct {
 	game_timers timers;								/**< @brief Struct with the game's timers */
 	player player1;									/**< @brief Player1, this is always the ship controlled by this computer */
 	player alien;
-	//asteroid asteroid_field[MAX_ASTEROIDS];			/**< @brief Asteroid array */
+	asteroid asteroid_field[MAX_ASTEROIDS];			/**< @brief Asteroid array */
 	unsigned int highscores[5];						/**< @brief Highscores array, up to 5 highscores */
 
 	SDL_Event SDLevent;								/**< @brief Type of input event */

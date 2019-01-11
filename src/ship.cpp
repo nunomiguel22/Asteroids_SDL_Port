@@ -118,27 +118,27 @@ void ship_apply_force(ship_event *s_event, player *p) {
 
 	/* Applies force based on keyboard input and accelaration values in "macros.h" */
 	switch (*s_event) {
-	case MAIN_THRUSTER: {
-		cannon_versor *= MAIN_THRUSTER_ACCELARATION;
-		p->force += cannon_versor;
-		break;
-	}
-	case PORT_THRUSTER: {
-		port_th *= PORT_THRUSTER_ACCELARATION;
-		p->force += port_th;
-		break;
-	}
-	case STARBOARD_THRUSTER: {
-		starboard_th *= STARBOARD_THRUSTER_ACCELARATION;
-		p->force += starboard_th;
-		break;
-	}
-	case REVERSE_THRUSTER: {
-		cannon_versor *= MAIN_THRUSTER_ACCELARATION;
-		p->force -= cannon_versor;
-		break;
-	}
-	default: break;
+		case MAIN_THRUSTER: {
+			cannon_versor *= MAIN_THRUSTER_ACCELARATION;
+			p->force += cannon_versor;
+			break;
+		}
+		case PORT_THRUSTER: {
+			port_th *= PORT_THRUSTER_ACCELARATION;
+			p->force += port_th;
+			break;
+		}
+		case STARBOARD_THRUSTER: {
+			starboard_th *= STARBOARD_THRUSTER_ACCELARATION;
+			p->force += starboard_th;
+			break;
+		}
+		case REVERSE_THRUSTER: {
+			cannon_versor *= MAIN_THRUSTER_ACCELARATION;
+			p->force -= cannon_versor;
+			break;
+		}
+		default: break;
 	}
 
 	/* Limits the force vector, and effectively the ship's velocity, to the maximum velocity value in "macros.h" */
@@ -174,7 +174,7 @@ void ship_update(player *p) {
 	/* Warps ship to the other end when crossing bounds */
 	ship_warp(p);
 
-	/* Rotates ship, avoids rotating when cursor is near the center of the ship */
+	 /* Rotates ship, avoids rotating when cursor is near the center of the ship */
 	mvector2d vcannon(p->pivot, p->cannon);
 	mvector2d vmouse(p->pivot, p->crosshair);
 
@@ -206,8 +206,8 @@ void ship_update(player *p) {
 void alien_spawn(player *p) {
 
 	/*Initiates alien ships values, gives it random movement */
-	mvector2d random((double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
-	p->force += random;
+	p->force.setX((double)rand() / RAND_MAX);
+	p->force.setY((double)rand() / RAND_MAX);
 
 	int random_xsign = rand() % 10;
 	int random_ysign = rand() % 10;
