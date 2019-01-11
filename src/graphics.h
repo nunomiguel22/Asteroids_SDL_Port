@@ -33,7 +33,7 @@ public:
 	BitmapInfoHeader getBitmapInfoHeader() const;
 	uint8_t* getBitmapData();
 	int load(const char* filepath);
-	void draw(int x, int y, uint8_t *pixelbuffer);
+	void draw(int x, int y);
 };
 
 class Pixmap {

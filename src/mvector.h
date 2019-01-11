@@ -25,6 +25,9 @@ public:
 	double getX() const { return this->x; }
 	double getY() const { return this->y; }
 
+	void setX(double x) { this->x = x; };
+	void setY(double y) { this->x = y; };
+
 	void print() {
 		printf("( %f , %f )\n", x, y);
 	}
@@ -56,7 +59,7 @@ public:
 		return nv;
 	}
 	
-	void operator *= (double &scalar) {
+	void operator *= (double scalar) {
 			x *= scalar;
 		y *= scalar;
 	}
@@ -108,5 +111,22 @@ public:
 		x = nx;
 		y = ny;
 	}
+
+	void limit(double limit) {
+
+		double magn = this->magnitude();
+		if (magn > limit)
+			*this *= (limit / magn);
+	}
+
+	mvector2d versor() {
+
+		double magn = this->magnitude();
+		mvector2d versor = *this;
+		versor /= magn;
+		return versor;
+	}
+
+
 
 };

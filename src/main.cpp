@@ -1,24 +1,25 @@
-#include <iostream>
 #include <SDL.h>
 #include <Windows.h>
 #include "vcard.h"
 #include "graphics.h"
-
+#include "game.h"
+#include <time.h>
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	uint8_t *pixbuffer = init_sdl();
+	srand(time(NULL));
 
-	bitmap_data test;
-	load_bitmaps(&test);
-	test.splash.draw(0,0, pixbuffer);
+	game_data game;
 
-	display_frame();
+	game.gr_buffer = init_sdl();
 
-	Sleep(5000);
+	game_data_init(&game);
 
+	show_splash(&game);
+	
+	event_handler(&game);
 
 	return 0;
 

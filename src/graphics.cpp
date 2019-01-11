@@ -92,7 +92,7 @@ int Bitmap::load(const char* filepath) {
 
 }
 
-void Bitmap::draw(int x, int y, uint8_t *pixelbuffer) {
+void Bitmap::draw(int x, int y) {
 
 	if (bitmapdata == NULL)
 		return;
