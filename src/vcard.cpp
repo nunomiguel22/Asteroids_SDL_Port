@@ -259,10 +259,10 @@ void render_frame(game_data *game) {
 	}
 
 	//Draw FPS counter
-	/*if (game->settings.fps_counter) {
+	if (game->settings.fps_counter) {
 		game->bmp.fps_header.draw(912, 3);
 		draw_number(game->timers.frames_per_second, 970, 17, game);
-	}*/
+	}
 
 	//Draw Score
 	game->bmp.score_header.draw (10, 4);

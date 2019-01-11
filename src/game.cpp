@@ -1,7 +1,7 @@
 #include "game.h"
 #include "SDL.h"
 #include "vcard.h"
-#include <iostream>
+#include <time.h>
 
 void physics_update(game_data *game) {
 
@@ -106,6 +106,9 @@ int game_data_init(game_data *game) {
 void event_handler(game_data* game) {
 
 	double lastTick = SDL_GetTicks();
+
+	clock_t previousRTC;
+	previousRTC = clock();
 	
 	while (game->state != COMP) {
 
@@ -166,6 +169,15 @@ void event_handler(game_data* game) {
 			game_state_machine(game);
 			lastTick = currentTick;
 		}
+
+		if ((clock() - previousRTC) / (double)CLOCKS_PER_SEC >= 1) {
+			game->timers.frames_per_second = ++game->timers.framecounter;
+			game->timers.framecounter = 0;
+			previousRTC = clock();
+		}
+		if (!game->settings.fps && game->state == PLAYING)
+			handle_frame(game);
+
 	}
 }
 

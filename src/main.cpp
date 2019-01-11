@@ -15,7 +15,9 @@ int main(int argc, char *argv[]) {
 
 	game.gr_buffer = init_sdl();
 
-	game_data_init(&game);
+	if (game_data_init(&game))
+		return 1;
+
 
 	show_splash(&game);
 	
