@@ -198,16 +198,16 @@ void game_state_machine(game_data* game) {
 
 				//checking button clicks
 				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->timers.timerTick >= 60) {
-					if (game->SDLevent.motion.x >= 229 && game->SDLevent.motion.x <= 648 && game->SDLevent.motion.y >= 132 && game->SDLevent.motion.y <= 217) {
+					if (game->SDLevent.motion.x >= 244 && game->SDLevent.motion.x <= 536 && game->SDLevent.motion.y >= 180 && game->SDLevent.motion.y <= 240) {
 						game->state = START_SEQUENCE;
 						first_frame = false;
 						break;
 					}
-					else if (game->SDLevent.motion.x >= 229 && game->SDLevent.motion.x <= 435 && game->SDLevent.motion.y >= 413 && game->SDLevent.motion.y <= 502) {
+					else if (game->SDLevent.motion.x >= 244 && game->SDLevent.motion.x <= 389 && game->SDLevent.motion.y >= 247 && game->SDLevent.motion.y <= 306) {
 						game->state = COMP;
 						break;
 					}
-					else if (game->SDLevent.motion.x >= 448 && game->SDLevent.motion.x <= 648 && game->SDLevent.motion.y >= 413 && game->SDLevent.motion.y <= 502) {
+					else if (game->SDLevent.motion.x >= 394 && game->SDLevent.motion.x <= 536 && game->SDLevent.motion.y >= 247 && game->SDLevent.motion.y <= 306) {
 						game->state = OPTIONSMENU;
 						break;
 					}
