@@ -1,0 +1,6 @@
+Horizontal_resolution 1024
+Vertical_resolution 768
+Fullscreen 0
+Fullscreen_native_stretched 0
+Borderless 0
+V-sync 0

@@ -1,8 +1,9 @@
 #include "vcard.h"
-#include <iostream>
 #include "SDL.h"
 #include "macros.h"
 #include "windows.h"
+#include "fstream"
+#include <iostream>
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer;
@@ -13,7 +14,36 @@ const int vram_size = hres * vres * pixel_bytes;
 
 using namespace std;
 
-uint8_t * init_sdl() {
+void read_video_settings(video_settings *settings) {
+	ifstream file;
+
+	file.open("config.txt");
+	
+	if (!file.is_open()) {
+		settings->vresolution = 1024;
+		settings->hresolution = 768;
+		settings->fullscreen = false;
+		settings->fullscreennative = false;
+		settings->vsync = false;
+		settings->borderless = false;
+		return;
+	}
+	
+	file.ignore(22);
+	file >> settings->hresolution;
+	file.ignore(20);
+	file >> settings->vresolution;
+	file.ignore(11);
+	file >> settings->fullscreen;
+	file.ignore(28);
+	file >> settings->fullscreennative;
+	file.ignore(11);
+	file >> settings->borderless;
+	file.ignore(7);
+	file >> settings->vsync;
+}
+
+uint8_t * init_sdl(video_settings *settings) {
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 
@@ -22,7 +52,23 @@ uint8_t * init_sdl() {
 		return NULL;
 	}
 
-	SDL_CreateWindowAndRenderer(hres, vres, SDL_WINDOW_SHOWN, &window, &renderer);
+	uint32_t windowFlags = SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
+
+	if (settings->fullscreen)
+		windowFlags |= SDL_WINDOW_FULLSCREEN;
+	else if (settings->fullscreennative)
+		windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	else if (settings->borderless)
+		windowFlags |= SDL_WINDOW_BORDERLESS;
+
+	uint32_t rendererFlags = SDL_RENDERER_ACCELERATED;
+
+	if (settings->vsync)
+		rendererFlags |= SDL_RENDERER_PRESENTVSYNC;
+
+	window = SDL_CreateWindow("Asteroids", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, settings->hresolution, settings->vresolution, windowFlags);
+	renderer = SDL_CreateRenderer(window, -1, rendererFlags);
+
 	screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, hres, vres);
 	pixelbuffer = (uint8_t *)malloc(vram_size);
 	SDL_RaiseWindow(window);

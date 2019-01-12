@@ -3,7 +3,19 @@
 #include "game.h"
 #include "mvector.h"
 
-uint8_t * init_sdl();
+typedef struct {
+	uint32_t hresolution;
+	uint32_t vresolution;
+	bool fullscreen;
+	bool fullscreennative;
+	bool borderless;
+	bool vsync;
+}video_settings;
+
+
+void read_video_settings(video_settings *settings);
+
+uint8_t* init_sdl(video_settings *settings);
 
 int draw_pixel(int x, int y, uint32_t color);
 void display_frame();
