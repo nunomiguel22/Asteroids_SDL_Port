@@ -24,6 +24,8 @@ int main(int argc, char *argv[]) {
 	
 	event_handler(&game);
 
+	exit_sdl();
+
 	return 0;
 
 }

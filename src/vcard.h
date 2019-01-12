@@ -16,6 +16,7 @@ typedef struct {
 void read_video_settings(video_settings *settings);
 
 uint8_t* init_sdl(video_settings *settings);
+void  exit_sdl();
 
 int draw_pixel(int x, int y, uint32_t color);
 void display_frame();
@@ -31,10 +32,6 @@ void draw_ast(asteroid *ast, Pixmap *xpm);
 
 void render_frame(game_data *game);
 void render_seq_frame(game_data *game);
-
-
-
-
 
 
 

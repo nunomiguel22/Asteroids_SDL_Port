@@ -328,6 +328,14 @@ void render_frame(game_data *game) {
 	draw_alien(game);
 }
 
+void  exit_sdl() {
+	free(pixelbuffer);
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyTexture(screen);
+	SDL_Quit();
+}
+
 
 mpoint2d vector_translate_gfx(mpoint2d *vector_space, unsigned int screen_width, unsigned int screen_height) {
 
