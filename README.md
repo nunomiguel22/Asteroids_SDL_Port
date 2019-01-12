@@ -10,7 +10,7 @@ config.txt contains the following video settings:
 * Borderless windowed mode
 * Enable vsync
 
-## Project Demo:
+## Game Demo:
 ![Screenshot](newmenu.jpg)
 Original Project demo
 ![Screenshot](demo.gif)
