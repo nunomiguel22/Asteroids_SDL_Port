@@ -6,7 +6,7 @@ config.txt contains the following video settings:
 * Horizontal resolution
 * Verical resolution
 * Enable Fullscreen
-* Enable Fullscreen streched
+* Enable Fullscreen streched mode
 * Borderless windowed mode
 * Enable vsync
 
