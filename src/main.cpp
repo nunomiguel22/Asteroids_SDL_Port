@@ -1,7 +1,5 @@
 #include <SDL.h>
-#include <Windows.h>
 #include "vcard.h"
-#include "graphics.h"
 #include "game.h"
 #include <time.h>
 
@@ -9,7 +7,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	video_settings *settings = (video_settings *) malloc (sizeof(video_settings));
 	game_data game;
 	read_video_settings(settings);

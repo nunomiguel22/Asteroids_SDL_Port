@@ -79,6 +79,18 @@ void start_timers(game_timers *timers) {
 	timers->alien_death_timer = 0;
 }
 
+void increment_timers(game_timers *timers) {
+	timers->timerTick++;
+	timers->player1_weapon_timer++;
+	timers->player2_weapon_timer++;
+	timers->alien_weapon_timer++;
+	timers->teleport_timer++;
+	timers->round_timer++;
+	if (timers->alien_death_timer > 0)
+		timers->alien_death_timer--;
+
+}
+
 
 
 int game_data_init(game_data *game) {
@@ -100,6 +112,7 @@ int game_data_init(game_data *game) {
 	load_xpms(&game->xpm);
 	if (load_bitmaps(&game->bmp))
 		return 1;
+
 	return 0;
 }
 
@@ -114,6 +127,7 @@ void event_handler(game_data* game) {
 
 		double currentTick = SDL_GetTicks();
 		
+		/* Input event from keyboard or mouse */
 		if(SDL_PollEvent(&game->SDLevent)) {
 			switch (game->SDLevent.type) {
 				case SDL_MOUSEMOTION: {
@@ -155,16 +169,10 @@ void event_handler(game_data* game) {
 
 		}
 
+		/* Timer event, 60 times a second */
 		if (currentTick - lastTick >= 17) {
 
-			game->timers.timerTick++;
-			game->timers.player1_weapon_timer++;
-			game->timers.player2_weapon_timer++;
-			game->timers.alien_weapon_timer++;
-			game->timers.teleport_timer++;
-			game->timers.round_timer++;
-			if (game->timers.alien_death_timer > 0)
-				game->timers.alien_death_timer--;
+			increment_timers(&game->timers);
 			game->event = TIMER;
 			game_state_machine(game);
 			lastTick = currentTick;
@@ -363,31 +371,32 @@ void game_state_machine(game_data* game) {
 	}
 }
 
-
 void playing_event_handler(game_data* game) {
 	switch (game->event) {
 
 		case KEYBOARD: {
-			ship_apply_force(&game->s_event, &game->player1);
+			/* Pause on escape */
 			if (game->s_event == K_ESC) {
 				render_frame(game);
 				game->bmp.pause_message.draw(0, 0);
 				display_frame();
 				game->state = GAMEPAUSED;
 			}
-			else if (game->s_event == QUIT)
-				game->state = COMP;
+			/* Apply force to ship */
+			else ship_apply_force(&game->s_event, &game->player1);
 			break;
 		}
 
 		case MOUSE: {
-			game->player1.crosshair.x = game->SDLevent.motion.x - hres / 2;
-			game->player1.crosshair.y = vres / 2 - game->SDLevent.motion.y;
+			/* Update the crosshair's position */
+			game->player1.crosshair.x = (game->SDLevent.motion.x - hres / 2) * game->settings.m_sens;
+			game->player1.crosshair.y = (vres / 2 - game->SDLevent.motion.y) * game->settings.m_sens;
 
-
+			/* Fire lasers */
 			if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->player1.weapon_ready)
 				ship_fire_laser(&game->player1, &game->timers.player1_weapon_timer);
 
+			/* Teleport */
 			if (game->SDLevent.button.button == SDL_BUTTON_RIGHT && game->player1.jump_ready)
 				ship_teleport(&game->player1, &game->timers.teleport_timer);
 
@@ -397,7 +406,7 @@ void playing_event_handler(game_data* game) {
 		case TIMER: {
 			/* Physics update */
 			if (game->timers.timerTick % PHYSICS_TICKS == 0)
-			physics_update(game);
+				physics_update(game);
 			/* Locked fps render */
 			if (game->settings.fps)
 				if (game->timers.timerTick % game->settings.fps == 0)

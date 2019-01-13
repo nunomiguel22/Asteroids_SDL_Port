@@ -91,8 +91,8 @@ void ship_teleport(player *p, unsigned int *timer) {
 	uint8_t random_xsign = rand() % 10;
 	uint8_t random_ysign = rand() % 10;
 
-	int current_x = p->pivot.x;
-	int current_y = p->pivot.y;
+	double current_x = p->pivot.x;
+	double current_y = p->pivot.y;
 	if (random_xsign >= 5)
 		random_x *= -1;
 	if (random_ysign >= 5)
@@ -291,7 +291,7 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 				alien->hp -= PLAYER_LASER_DAMAGE;
 				player1->lasers[j].active = false;
 				if (alien->hp <= 0) {
-					timers->alien_death_timer = ALIEN_DEATH_DURATION * 60;
+					timers->alien_death_timer = (unsigned int)(ALIEN_DEATH_DURATION * 60);
 					alien->active = false;
 					player1->score += 400;
 				}
@@ -313,7 +313,7 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 
 	/* Alien ship to player ship collision, this kills the player ship */
 	mvector2d v_ast_ship(player1->pivot, alien->pivot);
-	int total_radius = player1->hit_radius + alien->hit_radius;
+	double total_radius = player1->hit_radius + alien->hit_radius;
 	if (total_radius > v_ast_ship.magnitude())
 		player1->hp -= player1->hp;
 }

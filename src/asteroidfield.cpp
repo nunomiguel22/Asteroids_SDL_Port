@@ -1,5 +1,4 @@
 #include "asteroidfield.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 void ast_spawn(asteroid asteroid_field[], player *player1) {
@@ -86,7 +85,7 @@ void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 					if (v_ast_laser.magnitude() <= asteroid_field[i].hit_radius) {
 						asteroid_field[i].active = false;
 						player1->lasers[j].active = false;
-						asteroid_field[i].death_timer = ASTEROID_DEATH_DURATION * 60;
+						asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
 						if (asteroid_field[i].size == LARGE) {
 							player1->score += 50;
 							ast_fragment(asteroid_field, i);
@@ -100,7 +99,7 @@ void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			}
 			/* Player ship to asteroid Collision */
 			mvector2d v_ast_ship(player1->pivot, asteroid_field[i].position);
-			int total_radius = player1->hit_radius + asteroid_field[i].hit_radius;
+			double total_radius = player1->hit_radius + asteroid_field[i].hit_radius;
 			if (total_radius > v_ast_ship.magnitude()) {
 				asteroid_field[i].active = false;
 				if (asteroid_field[i].size == LARGE) {
@@ -115,7 +114,7 @@ void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 						player1->score += 100;
 					}
 				}
-				asteroid_field[i].death_timer = ASTEROID_DEATH_DURATION * 60;
+				asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
 			}
 
 			/* End round when all asteroids are destroyed */
@@ -147,6 +146,10 @@ void ast_update(asteroid asteroid_field[]) {
 				asteroid_field[i].position.y -= vres;
 			else if (asteroid_field[i].position.y < math_v_negative_bound)
 				asteroid_field[i].position.y += vres;
+
+			if (asteroid_field[i].degrees >= 360)
+				asteroid_field[i].degrees -= 360;
+			else asteroid_field[i].degrees++;
 		}
 	}
 }
@@ -155,8 +158,8 @@ void ast_fragment(asteroid asteroid_field[], int ast_index) {
 
 	/* Fragments large asteroids into two smaller asteroids with random movement */
 	int frag_counter = 0;
-	int x = asteroid_field[ast_index].position.x;
-	int y = asteroid_field[ast_index].position.y;
+	double x = asteroid_field[ast_index].position.x;
+	double y = asteroid_field[ast_index].position.y;
 
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
 

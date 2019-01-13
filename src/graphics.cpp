@@ -1,7 +1,6 @@
 #include "graphics.h"
 #include "vcard.h"
 #include "mvector.h"
-#include <iostream>
 #include "pixmaps.h"
 
 #pragma warning(disable:4996)
@@ -181,8 +180,8 @@ void Pixmap::draw(int gx, int gy, double rotation_degrees) {
 			mvector2d pivot = center - point;
 			pivot.rotate(degrees);
 			pivot += center;
-			x = round(pivot.getX() + gx - center_x);
-			y = round(pivot.getY() + gy - center_y);
+			x = (int)(round(pivot.getX() + gx - center_x));
+			y = (int)(round(pivot.getY() + gy - center_y));
 
 			if (color && color != COLOR_IGNORED) {
 				if (draw_pixel(x, y, color))

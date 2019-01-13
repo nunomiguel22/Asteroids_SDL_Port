@@ -1,7 +1,6 @@
 #include "vcard.h"
 #include "SDL.h"
 #include "macros.h"
-#include "windows.h"
 #include "fstream"
 #include <iostream>
 
@@ -9,12 +8,14 @@ SDL_Window *window = NULL;
 SDL_Renderer *renderer;
 SDL_Texture *screen;
 uint8_t *pixelbuffer;
+
 const int pixel_bytes = 4;
 const int vram_size = hres * vres * pixel_bytes;
 
 using namespace std;
 
 void read_video_settings(video_settings *settings) {
+
 	ifstream file;
 
 	file.open("config.txt");
@@ -98,9 +99,10 @@ int draw_pixel(int x, int y, uint32_t color) {
 void display_frame() {
 
 	SDL_UpdateTexture(screen, NULL, pixelbuffer, hres * 4);
-	SDL_RenderClear(renderer);
+	//SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, screen, NULL, NULL);
 	SDL_RenderPresent(renderer);
+	
 	memset(pixelbuffer, 0, vram_size);
 }
 
@@ -108,7 +110,7 @@ void display_frame() {
 void show_splash(game_data *game) {
 	game->bmp.splash.draw(0, 0);
 	display_frame();
-	Sleep(2000);
+	SDL_Delay(2000);
 	display_frame();
 	game->bmp.menu.draw(0, 0);
 	game->xpm.cursor.draw(hres / 2, vres / 2, false);
@@ -152,14 +154,14 @@ void draw_number(int number, int x, int y, game_data *game) {
 	while (true) {
 		size++;
 		reverse_number = reverse_number * 10 + (temp_number % 10);
-		temp_number = floor(temp_number / 10);
+		temp_number = (int)floor(temp_number / 10);
 		if (temp_number == 0)
 			break;
 	}
 
 	for (int i = 0; i < size; i++) {
 		draw_digit(reverse_number % 10, x, y, game);
-		reverse_number = floor(reverse_number / 10);
+		reverse_number = (int)floor(reverse_number / 10);
 		x += 10;
 	}
 }
@@ -172,8 +174,8 @@ void render_seq_frame(game_data *game) {
 }
 
 void draw_ship(Pixmap *xpm, player *p) {
-	double degrees;
 
+	double degrees;
 	mvector2d vmouse(p->pivot, p->crosshair);
 	mvector2d vcannon(p->pivot, p->cannon);
 	if (vmouse.magnitude() > 5)
@@ -182,23 +184,20 @@ void draw_ship(Pixmap *xpm, player *p) {
 
 	mpoint2d ws_pivot = vector_translate_gfx(&p->pivot, 1024, 768);
 
-	xpm->draw(ws_pivot.x, ws_pivot.y, degrees);
-	
+	xpm->draw((int)ws_pivot.x, (int)ws_pivot.y, degrees);
 }
-
-
 
 void draw_alien(game_data *game) {
 	if (game->alien.active) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
 		mvector2d vcannon (game->alien.pivot, game->alien.cannon);
-		game->xpm.alien_ship.draw(ws_pivot.x, ws_pivot.y, vcannon.angle() - 90);
+		game->xpm.alien_ship.draw((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle() - 90);
 
 		//Draw alien lasers
 		for (int i = 0; i < AMMO; i++) {
 			if (game->alien.lasers[i].active) {
 				mpoint2d ws_laser = vector_translate_gfx(&game->alien.lasers[i].position, 1024, 768);
-				game->xpm.red_laser.draw(ws_laser.x, ws_laser.y, 0);
+				game->xpm.red_laser.draw((int)ws_laser.x, (int)ws_laser.y, 0);
 			}
 		}
 	}
@@ -206,16 +205,16 @@ void draw_alien(game_data *game) {
 	else if (game->timers.alien_death_timer > 0) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
 		if (game->timers.alien_death_timer > 20) {
-			game->xpm.asteroid_dest1.draw (ws_pivot.x, ws_pivot.y, false);
-			game->bmp.alien_score.draw (ws_pivot.x + 10, ws_pivot.y - 35);
+			game->xpm.asteroid_dest1.draw ((int)ws_pivot.x, (int)ws_pivot.y, false);
+			game->bmp.alien_score.draw ((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
 		}
 		else if (game->timers.alien_death_timer > 10) {
-			game->xpm.asteroid_dest2.draw(ws_pivot.x, ws_pivot.y, false);
-			game->bmp.alien_score.draw(ws_pivot.x + 10, ws_pivot.y - 35);
+			game->xpm.asteroid_dest2.draw((int)ws_pivot.x, (int)ws_pivot.y, false);
+			game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
 		}
 		else {
-			game->xpm.asteroid_dest3.draw(ws_pivot.x, ws_pivot.y, false);
-			game->bmp.alien_score.draw(ws_pivot.x + 10, ws_pivot.y - 35);
+			game->xpm.asteroid_dest3.draw((int)ws_pivot.x, (int)ws_pivot.y, false);
+			game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
 		}
 	}
 }
@@ -224,12 +223,7 @@ void draw_alien(game_data *game) {
 void draw_ast(asteroid *ast, Pixmap *xpm) {
 
 	mpoint2d ws_ast = vector_translate_gfx(&ast->position, 1024, 768);
-	xpm->draw(ws_ast.x, ws_ast.y, ast->degrees);
-
-	if (ast->degrees >= 360)
-		ast->degrees -= 360;
-	else ast->degrees++;
-
+	xpm->draw((int)ws_ast.x, (int)ws_ast.y, ast->degrees);
 }
 
 void render_frame(game_data *game) {
@@ -237,7 +231,7 @@ void render_frame(game_data *game) {
 	game->bmp.game_background.draw(0, 0);
 
 	mpoint2d ws_mouse = vector_translate_gfx(&game->player1.crosshair, 1024, 768);
-	game->xpm.crosshair.draw(ws_mouse.x, ws_mouse.y, 0);
+	game->xpm.crosshair.draw((int)ws_mouse.x, (int)ws_mouse.y, 0);
 	switch (game->s_event) {
 
 		case MAIN_THRUSTER: {
@@ -267,7 +261,7 @@ void render_frame(game_data *game) {
 	for (int i = 0; i < AMMO; i++) {
 		if (game->player1.lasers[i].active) {
 			mpoint2d ws_laser = vector_translate_gfx(&game->player1.lasers[i].position, 1024, 768);
-			game->xpm.blue_laser.draw(ws_laser.x, ws_laser.y, 0);
+			game->xpm.blue_laser.draw((int)ws_laser.x, (int)ws_laser.y, 0);
 		}
 	}
 
@@ -289,16 +283,16 @@ void render_frame(game_data *game) {
 			else temp = game->bmp.large_score;
 
 			if (game->asteroid_field[i].death_timer > 20) {
-				game->xpm.asteroid_dest1.draw(ws_ast.x, ws_ast.y, false);
-				temp.draw(ws_ast.x + 10, ws_ast.y - 35);
+				game->xpm.asteroid_dest1.draw((int)ws_ast.x, (int)ws_ast.y, false);
+				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 			else if (game->asteroid_field[i].death_timer > 10) {
-				game->xpm.asteroid_dest2.draw(ws_ast.x, ws_ast.y, false);
-				temp.draw(ws_ast.x + 10, ws_ast.y - 35);
+				game->xpm.asteroid_dest2.draw((int)ws_ast.x, (int)ws_ast.y, false);
+				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 			else if (game->asteroid_field[i].death_timer > 0) {
-				game->xpm.asteroid_dest3.draw(ws_ast.x, ws_ast.y, false);
-				temp.draw(ws_ast.x + 10, ws_ast.y - 35);
+				game->xpm.asteroid_dest3.draw((int)ws_ast.x, (int)ws_ast.y, false);
+				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 		}
 
@@ -329,6 +323,7 @@ void render_frame(game_data *game) {
 }
 
 void  exit_sdl() {
+
 	free(pixelbuffer);
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);

@@ -6,10 +6,10 @@
 #define mpi 3.14159265358979323846264338327950288	//	PI 
 #define mpi2 1.57079632679489661923132169163975144	//	PI / 2
 
-typedef struct mpoint2d {
+typedef struct {
 	double x;
 	double y;
-};
+} mpoint2d;
 
 class mvector2d {
 	double x;
@@ -126,7 +126,4 @@ public:
 		versor /= magn;
 		return versor;
 	}
-
-
-
 };
