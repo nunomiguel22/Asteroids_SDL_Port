@@ -1,4 +1,4 @@
-# Asteroids_Windows_Port
+# Asteroids_SDL_Port
 Port/continuation of LCOM's minix project Asteroids, ported for windows using SDL 2.0. 
 
 ## Instructions:
