@@ -116,6 +116,49 @@ void Bitmap::draw(int x, int y) {
 		}
 }
 
+void Bitmap::draw_rot(int gx, int gy, double rotation_degrees) {
+
+	if (bitmapdata == NULL)
+		return;
+
+	int width = bitmapinfoheader.width;
+	int height = bitmapinfoheader.height;
+	
+	if (gx + width < 0 || gx > 1023 || gy + height < 0 || gy > 767)
+		return;
+
+	int center_x = (width / 2) - 1;
+	int center_y = (height / 2) - 1;
+	int x = gx;
+	int y = gy;
+	double degrees = 180 - rotation_degrees;
+
+
+	unsigned char* imgStartPos;
+	imgStartPos = bitmapdata;
+
+	for (int i = height; i != 0; i--)
+		for (int j = 0; j < width; j++) {
+			uint32_t color = (imgStartPos[(i * width * 3) + (j * 3 + 2)] << 16);
+			color += (imgStartPos[(i * width * 3) + (j * 3 + 1)] << 8);
+			color += (imgStartPos[(i * width * 3) + (j * 3)]);
+
+			mvector2d center(center_x, center_y);
+			mvector2d point(j, i);
+			mvector2d pivot = center - point;
+			pivot.rotate(90 - rotation_degrees);
+			pivot += center;
+			x = (int)(round(pivot.getX() + gx - center_x));
+			y = (int)(round(pivot.getY() + gy - center_y));
+
+
+
+			if (color && color != COLOR_IGNORED && i < height - 1)
+				if (draw_pixel(x, y, color))
+					continue;
+		}
+}
+
 
 int Pixmap::getHeight() { return height; }
 int Pixmap::getWidth() { return width; }
@@ -197,24 +240,18 @@ int load_bitmaps(bitmap_data *bmp) {
 		bmp->menu.load("textures/menu.bmp");
 	while (bmp->options.load("textures/options.bmp"))
 		bmp->options.load("textures/options.bmp");
-	while (bmp->boxticked.load("textures/boxticked.bmp"))
-		bmp->boxticked.load("textures/boxticked.bmp");
-	while (bmp->game_background.load("textures/gamebackground.bmp"))
-		bmp->game_background.load("textures/gamebackground.bmp");
-	while (bmp->host_connecting.load("textures/hostconnecting.bmp"))
-		bmp->host_connecting.load("textures/hostconnecting.bmp");
-	while (bmp->client_connecting.load("textures/clientconnecting.bmp"))
-		bmp->client_connecting.load("textures/clientconnecting.bmp");
-	while (bmp->connected.load("textures/connected.bmp"))
-		bmp->connected.load("textures/connected.bmp");
-	while (bmp->pause_message.load("textures/pausemessage.bmp"))
-		bmp->pause_message.load("textures/pausemessage.bmp");
-	while (bmp->splash.load("textures/splash.bmp"))
-		bmp->splash.load("textures/splash.bmp");
 	while (bmp->death_screen.load("textures/deathscreen.bmp"))
 		bmp->death_screen.load("textures/deathscreen.bmp");
 	while (bmp->death_screen_highscore.load("textures/deathscreenhighscore.bmp"))
 		bmp->death_screen_highscore.load("textures/deathscreenhighscore.bmp");
+	while (bmp->boxticked.load("textures/boxticked.bmp"))
+		bmp->boxticked.load("textures/boxticked.bmp");
+	while (bmp->game_background.load("textures/gamebackground.bmp"))
+		bmp->game_background.load("textures/gamebackground.bmp");
+	while (bmp->pause_message.load("textures/pausemessage.bmp"))
+		bmp->pause_message.load("textures/pausemessage.bmp");
+	while (bmp->splash.load("textures/splash.bmp"))
+		bmp->splash.load("textures/splash.bmp");
 	while (bmp->score_header.load("textures/score_header.bmp"))
 		bmp->score_header.load("textures/score_header.bmp");
 	while (bmp->hp_header.load("textures/hp_header.bmp"))
@@ -223,6 +260,8 @@ int load_bitmaps(bitmap_data *bmp) {
 		bmp->hp_header_low.load("textures/hp_header_low.bmp");
 	while (bmp->fps_header.load("textures/fps_header.bmp"))
 		bmp->fps_header.load("textures/fps_header.bmp");
+	while (bmp->alien_ship.load("textures/alienship.bmp"))
+		bmp->alien_ship.load("textures/alienship.bmp");
 	while (bmp->teleport_ready_header.load("textures/jmpheaderrdy.bmp"))
 		bmp->teleport_ready_header.load("textures/jmpheaderrdy.bmp");
 	while (bmp->teleport_not_ready_header.load("textures/jmpheadernotrdy.bmp"))
@@ -233,10 +272,8 @@ int load_bitmaps(bitmap_data *bmp) {
 		bmp->large_score.load("textures/largescore.bmp");
 	while (bmp->alien_score.load("textures/alienscore.bmp"))
 		bmp->alien_score.load("textures/alienscore.bmp");
-	while (bmp->mp_win_screen.load("textures/mpwinscreen.bmp"))
-		bmp->mp_win_screen.load("textures/mpwinscreen.bmp");
-	while (bmp->mp_loss_screen.load("textures/mplossscreen.bmp"))
-		bmp->mp_loss_screen.load("textures/mplossscreen.bmp");
+
+
 	return 0;
 }
 
@@ -251,8 +288,6 @@ void load_xpms(pixmap_data *pix) {
 	pix->ship_red_bt.read(pix_ship_red_bt);
 	pix->ship_red_pt.read(pix_ship_red_pt);
 	pix->ship_red_st.read(pix_ship_red_st);
-
-	pix->alien_ship.read(pix_alien_ship);
 
 	pix->asteroid_medium.read(pix_asteroid_medium);
 	pix->asteroid_large.read(pix_asteroid_large);

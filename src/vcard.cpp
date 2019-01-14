@@ -191,7 +191,7 @@ void draw_alien(game_data *game) {
 	if (game->alien.active) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
 		mvector2d vcannon (game->alien.pivot, game->alien.cannon);
-		game->xpm.alien_ship.draw((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle() - 90);
+		game->bmp.alien_ship.draw_rot((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle());
 
 		//Draw alien lasers
 		for (int i = 0; i < AMMO; i++) {

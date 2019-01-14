@@ -205,7 +205,7 @@ void game_state_machine(game_data* game) {
 			if (game->event == MOUSE) {
 
 				//checking button clicks
-				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->timers.timerTick >= 60) {
+				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->timers.timerTick >= 30) {
 					if (game->SDLevent.motion.x >= 244 && game->SDLevent.motion.x <= 536 && game->SDLevent.motion.y >= 180 && game->SDLevent.motion.y <= 240) {
 						game->state = START_SEQUENCE;
 						first_frame = false;
@@ -345,9 +345,10 @@ void game_state_machine(game_data* game) {
 
 					case TIMER: {
 					render_frame(game);
-					if (highscore)
-						handle_menu_frame(game, &game->bmp.death_screen_highscore);
-					else handle_menu_frame(game, &game->bmp.death_screen);
+					//if (highscore)
+						//handle_menu_frame(game, &game->bmp.death_screen_highscore);
+					//else handle_menu_frame(game, &game->bmp.death_screen);
+						handle_menu_frame(game, &game->bmp.death_screen);
 					break;
 				}
 				default: break;

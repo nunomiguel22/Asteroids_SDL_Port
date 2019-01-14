@@ -314,7 +314,7 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 	/* Alien ship to player ship collision, this kills the player ship */
 	mvector2d v_ast_ship(player1->pivot, alien->pivot);
 	double total_radius = player1->hit_radius + alien->hit_radius;
-	if (total_radius > v_ast_ship.magnitude())
+	if (total_radius > v_ast_ship.magnitude() && !player1->invulnerability)
 		player1->hp -= player1->hp;
 }
 

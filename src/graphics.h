@@ -34,6 +34,7 @@ public:
 	uint8_t* getBitmapData();
 	int load(const char* filepath);
 	void draw(int x, int y);
+	void draw_rot(int gx, int gy, double rotation_degrees);
 };
 
 class Pixmap {
@@ -68,8 +69,6 @@ typedef struct {
 	Pixmap ship_red_pt;
 	Pixmap ship_red_st;
 
-	Pixmap alien_ship;
-
 	Pixmap cursor;
 	Pixmap crosshair;
 	Pixmap blue_laser;
@@ -96,9 +95,6 @@ typedef struct {
 	Bitmap options;
 	Bitmap boxticked;
 	Bitmap game_background;
-	Bitmap host_connecting;
-	Bitmap client_connecting;
-	Bitmap connected;
 	Bitmap pause_message;
 	Bitmap splash;
 	Bitmap death_screen;
@@ -112,8 +108,7 @@ typedef struct {
 	Bitmap medium_score;
 	Bitmap large_score;
 	Bitmap alien_score;
-	Bitmap mp_loss_screen;
-	Bitmap mp_win_screen;
+	Bitmap alien_ship;
 }bitmap_data;
 
 int load_bitmaps(bitmap_data *bmp);
