@@ -87,8 +87,6 @@ int Bitmap::load(const char* filepath) {
 	bitmapdata = bitmapImage;
 
 	return 0;
-
-
 }
 
 void Bitmap::draw(int x, int y) {
@@ -96,22 +94,16 @@ void Bitmap::draw(int x, int y) {
 	if (bitmapdata == NULL)
 		return;
 
-	int width = bitmapinfoheader.width;
-	int height = bitmapinfoheader.height;
-
-	if (x + width < 0 || x > 1023 || y + height < 0 || y > 767)
+	if (x + bitmapinfoheader.width < 0 || x > 1023 || y + bitmapinfoheader.height < 0 || y > 767)
 		return;
 
-	unsigned char* imgStartPos;
-	imgStartPos = bitmapdata;
-
-	for (int i = height; i != 0; i--)
-		for (int j = 0; j < width; j++) {
-			uint32_t color = (imgStartPos[(i * width * 3) + (j * 3 + 2)] << 16);
-			color += (imgStartPos[(i * width * 3) + (j * 3 + 1)] << 8);
-			color += (imgStartPos[(i * width * 3) + (j * 3)]);
-			if (color && color != COLOR_IGNORED && i < height - 1)
-				if (draw_pixel(x + j, y + height - i - 1, color))
+	for (int i = bitmapinfoheader.height; i != 0; i--)
+		for (int j = 0; j < bitmapinfoheader.width; j++) {
+			uint32_t color = (bitmapdata[(i * bitmapinfoheader.width * 3) + (j * 3 + 2)] << 16);
+			color += (bitmapdata[(i * bitmapinfoheader.width * 3) + (j * 3 + 1)] << 8);
+			color += (bitmapdata[(i * bitmapinfoheader.width * 3) + (j * 3)]);
+			if (color && color != COLOR_IGNORED && i < bitmapinfoheader.height - 1)
+				if (draw_pixel(x + j, y + bitmapinfoheader.height - i - 1, color))
 					continue;
 		}
 }
@@ -120,45 +112,36 @@ void Bitmap::draw_rot(int gx, int gy, double rotation_degrees) {
 
 	if (bitmapdata == NULL)
 		return;
-
-	int width = bitmapinfoheader.width;
 	int height = bitmapinfoheader.height;
-	
+	int width = bitmapinfoheader.width;
+
 	if (gx + width < 0 || gx > 1023 || gy + height < 0 || gy > 767)
 		return;
 
 	int center_x = (width / 2) - 1;
 	int center_y = (height / 2) - 1;
-	int x = gx;
-	int y = gy;
-	double degrees = 180 - rotation_degrees;
-
-
-	unsigned char* imgStartPos;
-	imgStartPos = bitmapdata;
 
 	for (int i = height; i != 0; i--)
 		for (int j = 0; j < width; j++) {
-			uint32_t color = (imgStartPos[(i * width * 3) + (j * 3 + 2)] << 16);
-			color += (imgStartPos[(i * width * 3) + (j * 3 + 1)] << 8);
-			color += (imgStartPos[(i * width * 3) + (j * 3)]);
+			uint32_t color = (bitmapdata[(i * width * 3) + (j * 3 + 2)] << 16);
+			color += (bitmapdata[(i * width * 3) + (j * 3 + 1)] << 8);
+			color += (bitmapdata[(i * width * 3) + (j * 3)]);
 
-			mvector2d center(center_x, center_y);
-			mvector2d point(j, i);
-			mvector2d pivot = center - point;
-			pivot.rotate(90 - rotation_degrees);
-			pivot += center;
-			x = (int)(round(pivot.getX() + gx - center_x));
-			y = (int)(round(pivot.getY() + gy - center_y));
-
-
-
-			if (color && color != COLOR_IGNORED && i < height - 1)
-				if (draw_pixel(x, y, color))
-					continue;
+			if (color && color != COLOR_IGNORED && i < height - 1) {
+				mvector2d center(center_x, center_y);
+				mvector2d point(j, i);
+				mvector2d pivot = center - point;
+				pivot.rotate(90 - rotation_degrees);
+				pivot += center;
+				int x = (int)(round(pivot.getX() + gx - center_x));
+				int y = (int)(round(pivot.getY() + gy - center_y));
+				
+				if (draw_pixel(x, y, color)) {
+				continue;
+				}
+			}
 		}
 }
-
 
 int Pixmap::getHeight() { return height; }
 int Pixmap::getWidth() { return width; }
@@ -173,8 +156,6 @@ int Pixmap::read(const char *pixmap[]) {
 		printf("read_xpm: incorrect width, height, colors\n");
 		return 1;
 	}
-
-	
 
 	unsigned int size = width * height;
 	map = (uint32_t*)malloc(size * 4);
@@ -203,8 +184,8 @@ int Pixmap::read(const char *pixmap[]) {
 		}
 	}
 	return 0;
-
 }
+
 void Pixmap::draw(int gx, int gy, double rotation_degrees) {
 
 	int center_x = (width / 2) - 1;
@@ -218,15 +199,15 @@ void Pixmap::draw(int gx, int gy, double rotation_degrees) {
 			
 			uint32_t color = map[(i * width) + j];
 
-			mvector2d center (center_x, center_y);
-			mvector2d point(j, i);
-			mvector2d pivot = center - point;
-			pivot.rotate(degrees);
-			pivot += center;
-			x = (int)(round(pivot.getX() + gx - center_x));
-			y = (int)(round(pivot.getY() + gy - center_y));
-
 			if (color && color != COLOR_IGNORED) {
+				mvector2d center(center_x, center_y);
+				mvector2d point(j, i);
+				mvector2d pivot = center - point;
+				pivot.rotate(degrees);
+				pivot += center;
+				x = (int)(round(pivot.getX() + gx - center_x));
+				y = (int)(round(pivot.getY() + gy - center_y));
+
 				if (draw_pixel(x, y, color))
 					continue;
 			}
@@ -272,25 +253,23 @@ int load_bitmaps(bitmap_data *bmp) {
 		bmp->large_score.load("textures/largescore.bmp");
 	while (bmp->alien_score.load("textures/alienscore.bmp"))
 		bmp->alien_score.load("textures/alienscore.bmp");
-
-
+	while (bmp->large_asteroid.load("textures/LargeAsteroid.bmp"))
+		bmp->large_asteroid.load("textures/LargeAsteroid.bmp");
+	while (bmp->medium_asteroid.load("textures/MediumAsteroid.bmp"))
+		bmp->medium_asteroid.load("textures/MediumAsteroid.bmp");
+	while (bmp->pix_ship_blue.load("textures/pix_ship_blue.bmp"))
+		bmp->pix_ship_blue.load("textures/pix_ship_blue.bmp");
+	while (bmp->pix_ship_blue_bt.load("textures/pix_ship_blue_bt.bmp"))
+		bmp->pix_ship_blue_bt.load("textures/pix_ship_blue_bt.bmp");
+	while (bmp->pix_ship_blue_pt.load("textures/pix_ship_blue_pt.bmp"))
+		bmp->pix_ship_blue_pt.load("textures/pix_ship_blue_pt.bmp");
+	while (bmp->pix_ship_blue_st.load("textures/pix_ship_blue_st.bmp"))
+		bmp->pix_ship_blue_st.load("textures/pix_ship_blue_st.bmp");
 	return 0;
 }
 
 void load_xpms(pixmap_data *pix) {
 
-	pix->ship_blue.read(pix_ship_blue);
-	pix->ship_blue_bt.read(pix_ship_blue_bt);
-	pix->ship_blue_pt.read(pix_ship_blue_pt);
-	pix->ship_blue_st.read(pix_ship_blue_st);
-
-	pix->ship_red.read(pix_ship_red);
-	pix->ship_red_bt.read(pix_ship_red_bt);
-	pix->ship_red_pt.read(pix_ship_red_pt);
-	pix->ship_red_st.read(pix_ship_red_st);
-
-	pix->asteroid_medium.read(pix_asteroid_medium);
-	pix->asteroid_large.read(pix_asteroid_large);
 	pix->asteroid_dest1.read(pix_asteroid_destroyed_1);
 	pix->asteroid_dest2.read(pix_asteroid_destroyed_2);
 	pix->asteroid_dest3.read(pix_asteroid_destroyed_3);
@@ -315,5 +294,4 @@ void load_xpms(pixmap_data *pix) {
 	pix->n_one_large.read(one_large);
 	pix->n_two_large.read(two_large);
 	pix->n_three_large.read(three_large);
-
 }

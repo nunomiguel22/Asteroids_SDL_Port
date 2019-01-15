@@ -26,9 +26,9 @@ void show_splash(game_data *game);
 void draw_digit(unsigned int num, int x, int y, game_data *game);
 void draw_large_digit(unsigned int num, int x, int y, game_data *game);
 void draw_number(int number, int x, int y, game_data *game);
-void draw_ship(Pixmap *xpm, player *p);
+void draw_ship(Bitmap *bmp, player *p);
 void draw_alien(game_data *game);
-void draw_ast(asteroid *ast, Pixmap *xpm);
+void draw_ast(asteroid *ast, Bitmap *bmp);
 
 void render_frame(game_data *game);
 void render_seq_frame(game_data *game);

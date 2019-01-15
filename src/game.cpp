@@ -3,30 +3,32 @@
 #include "vcard.h"
 #include <time.h>
 
-void physics_update(game_data *game) {
 
-	ast_update(game->asteroid_field);
-	ast_collision(game->asteroid_field, &game->player1, &game->alien);
-	ship_update(&game->player1);
-	if (game->alien.active) {
-		alien_update(&game->alien, &game->player1, &game->timers);
-		alien_collision(&game->alien, &game->player1, &game->timers);
+void physics_update(int id, game_data &game) {
+
+
+	ast_update(game.asteroid_field);
+	ast_collision(game.asteroid_field, &game.player1, &game.alien);
+	ship_update(&game.player1);
+	if (game.alien.active) {
+		alien_update(&game.alien, &game.player1, &game.timers);
+		alien_collision(&game.alien, &game.player1, &game.timers);
 	}
-	if (game->timers.round_timer <= 30)
-		game->player1.invulnerability = true;
-	else game->player1.invulnerability = false;
+	if (game.timers.round_timer <= 30)
+		game.player1.invulnerability = true;
+	else game.player1.invulnerability = false;
 
-	if (game->player1.hp <= 0) {
-		game->player1.hp = 0;
-		game->state = LOSS;
+	if (game.player1.hp <= 0) {
+		game.player1.hp = 0;
+		game.state = LOSS;
 	}
 }
 
-void handle_frame(game_data * game) {
+void handle_frame(game_data *game) {
 
 	render_frame(game);
 	display_frame();
-	game->timers.framecounter += 1;
+	game->timers.framecounter++;
 }
 
 void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
@@ -94,6 +96,7 @@ void increment_timers(game_timers *timers) {
 
 
 int game_data_init(game_data *game) {
+	game->threads.resize(8);
 
 	if (!load_highscores(game->highscores))
 		for (int i = 0; i < 5; i++)
@@ -108,8 +111,8 @@ int game_data_init(game_data *game) {
 	game->settings.fps = 1;
 	game->settings.m_sens = 1;
 	game->alien.active = false;
-
 	load_xpms(&game->xpm);
+	
 	if (load_bitmaps(&game->bmp))
 		return 1;
 
@@ -188,7 +191,6 @@ void event_handler(game_data* game) {
 
 	}
 }
-
 
 void game_state_machine(game_data* game) {
 
@@ -345,10 +347,9 @@ void game_state_machine(game_data* game) {
 
 					case TIMER: {
 					render_frame(game);
-					//if (highscore)
-						//handle_menu_frame(game, &game->bmp.death_screen_highscore);
-					//else handle_menu_frame(game, &game->bmp.death_screen);
-						handle_menu_frame(game, &game->bmp.death_screen);
+					if (highscore)
+						handle_menu_frame(game, &game->bmp.death_screen_highscore);
+					else handle_menu_frame(game, &game->bmp.death_screen);
 					break;
 				}
 				default: break;
@@ -407,7 +408,7 @@ void playing_event_handler(game_data* game) {
 		case TIMER: {
 			/* Physics update */
 			if (game->timers.timerTick % PHYSICS_TICKS == 0)
-				physics_update(game);
+				game->threads.push(physics_update, std::ref(*game));
 			/* Locked fps render */
 			if (game->settings.fps)
 				if (game->timers.timerTick % game->settings.fps == 0)

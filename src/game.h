@@ -5,6 +5,7 @@
 #include "macros.h"
 #include "ship.h"
 #include "asteroidfield.h"
+#include "ctpl_stl.h"
 
 typedef enum { KEYBOARD, MOUSE, TIMER} event_type;
 
@@ -22,6 +23,7 @@ typedef struct {
 
 /** @brief Main game data structure */
 typedef struct {
+	ctpl::thread_pool threads;
 	game_sts state;									/**< @brief Current game state */
 	game_timers timers;								/**< @brief Struct with the game's timers */
 	player player1;									/**< @brief Player1, this is always the ship controlled by this computer */
@@ -47,14 +49,14 @@ typedef struct {
 *
 * @param game General game struct
 */
-void physics_update(game_data *game);
+void physics_update(int id, game_data &game);
 /**
 * @brief This function does all multiplayer physics operations
 *
 * @param game General game struct
 */
 
-void handle_frame(game_data * game);
+void handle_frame(game_data &game);
 /**
 * @brief Renders multiplayer frames, allows for page flipping and vsync. Clears the local pixel buffer
 *

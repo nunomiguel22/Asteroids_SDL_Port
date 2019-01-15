@@ -99,7 +99,6 @@ int draw_pixel(int x, int y, uint32_t color) {
 void display_frame() {
 
 	SDL_UpdateTexture(screen, NULL, pixelbuffer, hres * 4);
-	//SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, screen, NULL, NULL);
 	SDL_RenderPresent(renderer);
 	
@@ -169,22 +168,21 @@ void draw_number(int number, int x, int y, game_data *game) {
 void render_seq_frame(game_data *game) {
 
 	game->bmp.game_background.draw(0, 0);
-	draw_ship(&game->xpm.ship_blue, &game->player1);
+	draw_ship(&game->bmp.pix_ship_blue, &game->player1);
 	draw_large_digit(game->timers.start_seq, 512, 304, game);
 }
 
-void draw_ship(Pixmap *xpm, player *p) {
+void draw_ship(Bitmap *bmp, player *p) {
 
 	double degrees;
 	mvector2d vmouse(p->pivot, p->crosshair);
 	mvector2d vcannon(p->pivot, p->cannon);
 	if (vmouse.magnitude() > 5)
-		degrees =vmouse.angle() - 90;
-	else degrees = vmouse.angle() - 90;
+		degrees =vmouse.angle();
+	else degrees = vmouse.angle();
 
 	mpoint2d ws_pivot = vector_translate_gfx(&p->pivot, 1024, 768);
-
-	xpm->draw((int)ws_pivot.x, (int)ws_pivot.y, degrees);
+	bmp->draw_rot((int)ws_pivot.x, (int)ws_pivot.y, degrees);
 }
 
 void draw_alien(game_data *game) {
@@ -220,10 +218,10 @@ void draw_alien(game_data *game) {
 }
 
 
-void draw_ast(asteroid *ast, Pixmap *xpm) {
+void draw_ast(asteroid *ast, Bitmap *bmp) {
 
 	mpoint2d ws_ast = vector_translate_gfx(&ast->position, 1024, 768);
-	xpm->draw((int)ws_ast.x, (int)ws_ast.y, ast->degrees);
+	bmp->draw_rot((int)ws_ast.x, (int)ws_ast.y, ast->degrees);
 }
 
 void render_frame(game_data *game) {
@@ -235,23 +233,23 @@ void render_frame(game_data *game) {
 	switch (game->s_event) {
 
 		case MAIN_THRUSTER: {
-			draw_ship(&game->xpm.ship_blue_bt, &game->player1);
+			draw_ship(&game->bmp.pix_ship_blue_bt, &game->player1);
 			break;
 		}
 		case PORT_THRUSTER: {
-			draw_ship(&game->xpm.ship_blue_st, &game->player1);
+			draw_ship(&game->bmp.pix_ship_blue_pt, &game->player1);
 			break;
 		}
 		case STARBOARD_THRUSTER: {
-			draw_ship(&game->xpm.ship_blue_pt, &game->player1);
+			draw_ship(&game->bmp.pix_ship_blue_st, &game->player1);
 			break;
 		}
 		case IDLING: {
-			draw_ship(&game->xpm.ship_blue, &game->player1);
+			draw_ship(&game->bmp.pix_ship_blue, &game->player1);
 			break;
 		}
 		default: {
-			draw_ship(&game->xpm.ship_blue, &game->player1);
+			draw_ship(&game->bmp.pix_ship_blue, &game->player1);
 			break;
 		}
 
@@ -271,10 +269,10 @@ void render_frame(game_data *game) {
 		//Active asteroids
 		if (game->asteroid_field[i].active) {
 			if (game->asteroid_field[i].size == MEDIUM)
-				draw_ast(&game->asteroid_field[i], &game->xpm.asteroid_medium);
-			else draw_ast(&game->asteroid_field[i], &game->xpm.asteroid_large);
-
+				draw_ast(&game->asteroid_field[i], &game->bmp.medium_asteroid);
+			else draw_ast(&game->asteroid_field[i], &game->bmp.large_asteroid);
 		}
+
 		//Destruction animation
 		else {
 			Bitmap temp;
@@ -295,7 +293,6 @@ void render_frame(game_data *game) {
 				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 		}
-
 	}
 
 	//Draw FPS counter

@@ -53,13 +53,6 @@ public:
 //GAME DATA
 
 typedef struct {
-	Pixmap ship_blue;
-	Pixmap ship_blue_bt;
-	Pixmap ship_blue_pt;
-	Pixmap ship_blue_st;
-
-	Pixmap asteroid_large;
-	Pixmap asteroid_medium;
 	Pixmap asteroid_dest1;
 	Pixmap asteroid_dest2;
 	Pixmap asteroid_dest3;
@@ -109,7 +102,14 @@ typedef struct {
 	Bitmap large_score;
 	Bitmap alien_score;
 	Bitmap alien_ship;
+	Bitmap large_asteroid;
+	Bitmap medium_asteroid;
+	Bitmap pix_ship_blue;
+	Bitmap pix_ship_blue_bt;
+	Bitmap pix_ship_blue_st;
+	Bitmap pix_ship_blue_pt;
 }bitmap_data;
+
 
 int load_bitmaps(bitmap_data *bmp);
 void load_xpms(pixmap_data *pix);
