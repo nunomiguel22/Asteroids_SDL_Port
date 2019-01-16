@@ -12,5 +12,8 @@ config.txt contains the following video settings:
 
 ## Game Demo:
 ![Screenshot](newmenu.jpg)
+![Screenshot](optionsmenu.jpg)
+Game demo
+![Screenshot](newdemo.gif)
 Original Project demo
 ![Screenshot](demo.gif)
