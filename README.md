@@ -4,6 +4,7 @@ Port/continuation of LCOM's project "Asteroids" for minix, based on the original
 ## Instructions:
 * config.txt contains the game settings in the options menu.
 * To compile you need SDL 2.0 and SDL mixer installed. The ctpl library is also needed or you can alter the lines that make use of multithreading.
+* This game uses various free to use assets
 
 ## Game Demo:
 ![Screenshot](demo/newmenu.jpg)
