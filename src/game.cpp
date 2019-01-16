@@ -102,6 +102,20 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 
 	switch (game->state) {
 	case MENU: {
+		for (int i = 0; i < MAX_ASTEROIDS; i++) {
+			mpoint2d ws_ast = vector_translate_gfx(&game->menu_asteroid_field[i].position, 1024, 768);
+			//Active asteroids
+			if (game->menu_asteroid_field[i].active) {
+				if (game->menu_asteroid_field[i].size == MEDIUM)
+					draw_ast(&game->menu_asteroid_field[i], &game->bmp.medium_asteroid);
+				else draw_ast(&game->menu_asteroid_field[i], &game->bmp.large_asteroid);
+			}
+		}
+
+		game->bmp.hsbackground.draw(787, 1);
+		game->bmp.playbutton.draw(380, 200);
+		game->bmp.optionsbutton.draw(380, 300);
+		game->bmp.quitbutton.draw(380, 400);
 		for (int i = 0; i < 5; i++)
 			draw_number(game->highscores[i], 900, 60 + i * 40, game);
 		break;
@@ -288,56 +302,68 @@ void game_state_machine(game_data* game) {
 		case MENU: {
 			static bool first_frame = false;
 			if (!first_frame) {
+				game->threads.push(play_music, std::ref(*game->sound.galaxia));
 				first_frame = true;
-				handle_menu_frame(game, &game->bmp.menu);
+				game->alien.round = 7;
+				ast_spawn(game->menu_asteroid_field, &game->alien);
+				handle_menu_frame(game, &game->bmp.menubackground);
 				game->timers.timerTick = 0;
 			}
 
-			if (game->event == MOUSE) {
-
-				//checking button clicks
-				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->timers.timerTick >= 30) {
-					if (game->SDLevent.motion.x >= 244 && game->SDLevent.motion.x <= 536 && game->SDLevent.motion.y >= 180 && game->SDLevent.motion.y <= 240) {
+			if (game->event == MOUSE) 
+				//Check menu selection
+				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->timers.timerTick >= 30	&& game->SDLevent.motion.x >= 380 && game->SDLevent.motion.x <= 570) {
+					if (game->SDLevent.motion.y >= 207 && game->SDLevent.motion.y <= 268) {
+						game->threads.push(stop_music);
 						game->state = START_SEQUENCE;
 						first_frame = false;
 						break;
 					}
-					else if (game->SDLevent.motion.x >= 244 && game->SDLevent.motion.x <= 389 && game->SDLevent.motion.y >= 247 && game->SDLevent.motion.y <= 306) {
+					else if (game->SDLevent.motion.y >= 407 && game->SDLevent.motion.y <= 467) {
 						game->state = COMP;
 						break;
 					}
-					else if (game->SDLevent.motion.x >= 394 && game->SDLevent.motion.x <= 536 && game->SDLevent.motion.y >= 247 && game->SDLevent.motion.y <= 306) {
+					else if (game->SDLevent.motion.y >= 308 && game->SDLevent.motion.y <= 366) {
 						game->state = OPTIONSMENU;
 						break;
 					}
 				}
-				handle_menu_frame(game, &game->bmp.menu);
+			
+
+			if (game->event == TIMER) {
+				ast_update(game->menu_asteroid_field);
+				handle_menu_frame(game, &game->bmp.menubackground);
 			}
 			break;
 		}
 		case OPTIONSMENU: {
 			static bool gfxchange = false;
 
-			if (game->event == TIMER) {
+			if (game->event == TIMER) 
 				handle_menu_frame(game, &game->bmp.options);
-			}
+			
 			if (game->event == MOUSE) {
 				if (game->SDLevent.button.button == SDL_BUTTON_LEFT) {
 
 					/* Display mode options*/
 					if (game->SDLevent.motion.x >= 215 && game->SDLevent.motion.x <= 410) {
-						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167)
+						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.fullscreen = true;
+						}
 						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.fullscreennative = true;
 							game->settings.fullscreen = false;
 						}
 						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.fullscreennative = false;
 							game->settings.fullscreen = false;
 							game->settings.borderless = true;
 						}
 						else if (game->SDLevent.motion.y >= 217 && game->SDLevent.motion.y <= 240) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.fullscreennative = false;
 							game->settings.fullscreen = false;
 							game->settings.borderless = false;
@@ -347,18 +373,22 @@ void game_state_machine(game_data* game) {
 					/* Resolution options*/
 					if (game->SDLevent.motion.x >= 37 && game->SDLevent.motion.x <= 158) {
 						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.vresolution = 1080;
 							game->settings.hresolution = 1920;
 						}
 						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.vresolution = 900;
 							game->settings.hresolution = 1600;
 						}
 						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.vresolution = 1024;
 							game->settings.hresolution = 1280;
 						}
 						else if (game->SDLevent.motion.y >= 217 && game->SDLevent.motion.y <= 240) {
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
 							game->settings.vresolution = 768;
 							game->settings.hresolution = 1024;
 						}
@@ -366,12 +396,18 @@ void game_state_machine(game_data* game) {
 					}
 					/* FPS options*/
 					if (game->SDLevent.motion.x >= 445 && game->SDLevent.motion.x <= 610) {
-						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167)
+						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167) {
 							game->settings.fps = 0;
-						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192)
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
+						}
+						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192) {
 							game->settings.fps = 1;
-						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215)
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
+						}
+						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215) {
 							game->settings.fps = 2;
+							game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
+						}
 					}
 
 					/* Music volume options*/
@@ -407,11 +443,15 @@ void game_state_machine(game_data* game) {
 					}
 				
 					/* FPS counter option*/
-					if (game->SDLevent.motion.y >= 270 && game->SDLevent.motion.y <= 290 && game->SDLevent.motion.x >= 345 && game->SDLevent.motion.x <= 370)
+					if (game->SDLevent.motion.y >= 270 && game->SDLevent.motion.y <= 290 && game->SDLevent.motion.x >= 345 && game->SDLevent.motion.x <= 370) {
 						game->settings.fps_counter ^= 1;
+						game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
+					}
 					/* Vsync option*/
-					if (game->SDLevent.motion.y >= 270 && game->SDLevent.motion.y <= 290 && game->SDLevent.motion.x >= 147 && game->SDLevent.motion.x <= 174)
+					if (game->SDLevent.motion.y >= 270 && game->SDLevent.motion.y <= 290 && game->SDLevent.motion.x >= 147 && game->SDLevent.motion.x <= 174) {
 						game->settings.vsync ^= 1;
+						game->threads.push(play_sound, std::ref(*game->sound.Beep_Short));
+					}
 					/* Cancel Button */
 					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 38 && game->SDLevent.motion.x <= 185) {
 						read_video_settings(&game->settings);
@@ -502,6 +542,7 @@ void game_state_machine(game_data* game) {
 			static bool highscore;
 			static bool first_frame = true;
 			if (first_frame) {
+				game->threads.push(stop_music);
 				game->timers.start_seq = 3;
 				first_frame = false;
 				highscore = verify_highscores(game->highscores, &game->player1);

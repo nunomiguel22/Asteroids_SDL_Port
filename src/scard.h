@@ -2,9 +2,12 @@
 #include "SDL_mixer.h"
 
 typedef struct {
+	Mix_Music *galaxia;
+	Mix_Music *kawaii;
 	Mix_Chunk *laser;
 	Mix_Chunk *pop;
-	Mix_Music *kawaii;
+	Mix_Chunk *Beep_Short;
+	
 
 }sound_data;
 

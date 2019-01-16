@@ -35,6 +35,7 @@ typedef struct {
 	game_timers timers;								/**< @brief Struct with the game's timers */
 	player player1;									/**< @brief Player1, this is always the ship controlled by this computer */
 	player alien;
+	asteroid menu_asteroid_field[MAX_ASTEROIDS];
 	asteroid asteroid_field[MAX_ASTEROIDS];			/**< @brief Asteroid array */
 	unsigned int highscores[5];						/**< @brief Highscores array, up to 5 highscores */
 

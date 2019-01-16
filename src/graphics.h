@@ -79,7 +79,11 @@ typedef struct {
 }pixmap_data;
 
 typedef struct {
-	Bitmap menu;
+	Bitmap menubackground;
+	Bitmap hsbackground;
+	Bitmap playbutton;
+	Bitmap optionsbutton;
+	Bitmap quitbutton;
 	Bitmap options;
 	Bitmap boxticked;
 	Bitmap game_background;

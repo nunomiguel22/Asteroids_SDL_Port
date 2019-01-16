@@ -191,7 +191,7 @@ void show_splash(game_data *game) {
 	display_frame();
 	SDL_Delay(3000);
 	display_frame();
-	game->bmp.menu.draw(0, 0);
+	game->bmp.menubackground.draw(0, 0);
 	game->xpm.cursor.draw(hres / 2, vres / 2, false);
 	display_frame();
 }

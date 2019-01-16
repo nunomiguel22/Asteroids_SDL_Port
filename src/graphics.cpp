@@ -217,8 +217,16 @@ void Pixmap::draw(int gx, int gy, double rotation_degrees) {
 
 int load_bitmaps(bitmap_data *bmp) {
 
-	while (bmp->menu.load("textures/menu.bmp"))
-		bmp->menu.load("textures/menu.bmp");
+	while (bmp->menubackground.load("textures/MenuBackground.bmp"))
+		bmp->menubackground.load("textures/MenuBackground.bmp");
+	while (bmp->hsbackground.load("textures/highscoresbackground.bmp"))
+		bmp->hsbackground.load("textures/highscoresbackground.bmp");
+	while (bmp->playbutton.load("textures/playbutton.bmp"))
+		bmp->playbutton.load("textures/playbutton.bmp");
+	while (bmp->optionsbutton.load("textures/optionsbutton.bmp"))
+		bmp->optionsbutton.load("textures/optionsbutton.bmp");
+	while (bmp->quitbutton.load("textures/quitbutton.bmp"))
+		bmp->quitbutton.load("textures/quitbutton.bmp");
 	while (bmp->options.load("textures/options.bmp"))
 		bmp->options.load("textures/options.bmp");
 	while (bmp->death_screen.load("textures/deathscreen.bmp"))
