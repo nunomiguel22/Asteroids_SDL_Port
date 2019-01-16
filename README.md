@@ -1,5 +1,5 @@
 # Asteroids_SDL_Port
-Port/continuation of LCOM's minix project Asteroids, ported using SDL 2.0.
+Port/continuation of LCOM's project "Asteroids" for minix, based on the original 1979 game. This game uses SDL 2.0.
 
 ## Instructions:
 * config.txt contains the game's settings
