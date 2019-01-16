@@ -14,19 +14,14 @@ const int vram_size = hres * vres * pixel_bytes;
 
 using namespace std;
 
-void read_video_settings(video_settings *settings) {
+void read_video_settings(game_settings *settings) {
 
 	ifstream file;
 
 	file.open("config.txt");
 	
 	if (!file.is_open()) {
-		settings->vresolution = 1024;
-		settings->hresolution = 768;
-		settings->fullscreen = false;
-		settings->fullscreennative = false;
-		settings->vsync = false;
-		settings->borderless = false;
+		reset_video_settings(settings);
 		return;
 	}
 	
@@ -42,9 +37,54 @@ void read_video_settings(video_settings *settings) {
 	file >> settings->borderless;
 	file.ignore(7);
 	file >> settings->vsync;
+	file.ignore(4);
+	file >> settings->fps;
+	file.ignore(12);
+	file >> settings->fps_counter;
+	file.ignore(13);
+	file >>settings->music_volume;
+	file.ignore(16);
+	file >> settings->effects_volume;
+
+	file.close();
 }
 
-uint8_t * init_sdl(video_settings *settings) {
+void reset_video_settings(game_settings *settings) {
+
+	settings->vresolution = 768;
+	settings->hresolution = 1024;
+	settings->fullscreen = false;
+	settings->fullscreennative = false;
+	settings->vsync = false;
+	settings->borderless = false;
+	settings->fps_counter = true;
+	settings->music_volume = 2;
+	settings->effects_volume = 3;
+	settings->fps = 1;
+}
+
+void save_video_settings(game_settings *settings) {
+
+	ofstream file;
+
+	file.open("config.txt");
+
+	file << "Horizontal_resolution " << settings->hresolution << endl;
+	file << "Vertical_resolution " << settings->vresolution << endl;
+	file << "Fullscreen " << settings->fullscreen << endl;
+	file << "Fullscreen_native_stretched " << settings->fullscreennative << endl;
+	file << "Borderless " << settings->borderless << endl;
+	file << "V-sync " << settings->vsync << endl;
+	file << "fps " << settings->fps << endl;
+	file << "fps_counter " << settings->fps_counter << endl;
+	file << "music_volume " << settings->music_volume << endl;
+	file << "effects_volume " << settings->effects_volume;
+
+	file.close();
+
+}
+
+uint8_t * init_sdl(game_settings *settings) {
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 
@@ -75,7 +115,47 @@ uint8_t * init_sdl(video_settings *settings) {
 	SDL_RaiseWindow(window);
 	SDL_ShowCursor(SDL_DISABLE);
 
+	if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1)
+	{
+		return NULL;
+	}
+
 	return pixelbuffer;
+}
+
+void  exit_sdl() {
+
+	free(pixelbuffer);
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyTexture(screen);
+	SDL_Quit();
+}
+
+void reset_sdl(game_settings *settings) {
+
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyTexture(screen);
+
+	uint32_t windowFlags = SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
+
+	if (settings->fullscreen)
+		windowFlags |= SDL_WINDOW_FULLSCREEN;
+	else if (settings->fullscreennative)
+		windowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	else if (settings->borderless)
+		windowFlags |= SDL_WINDOW_BORDERLESS;
+
+	uint32_t rendererFlags = SDL_RENDERER_ACCELERATED;
+
+	if (settings->vsync)
+		rendererFlags |= SDL_RENDERER_PRESENTVSYNC;
+
+	window = SDL_CreateWindow("Asteroids", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, settings->hresolution, settings->vresolution, windowFlags);
+	renderer = SDL_CreateRenderer(window, -1, rendererFlags);
+
+	screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, hres, vres);
 }
 
 int draw_pixel(int x, int y, uint32_t color) {
@@ -109,7 +189,7 @@ void display_frame() {
 void show_splash(game_data *game) {
 	game->bmp.splash.draw(0, 0);
 	display_frame();
-	SDL_Delay(2000);
+	SDL_Delay(3000);
 	display_frame();
 	game->bmp.menu.draw(0, 0);
 	game->xpm.cursor.draw(hres / 2, vres / 2, false);
@@ -263,6 +343,7 @@ void render_frame(game_data *game) {
 		}
 	}
 
+
 	//Draw Asteroids
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
 		mpoint2d ws_ast = vector_translate_gfx(&game->asteroid_field[i].position, 1024, 768);
@@ -319,14 +400,6 @@ void render_frame(game_data *game) {
 	draw_alien(game);
 }
 
-void  exit_sdl() {
-
-	free(pixelbuffer);
-	SDL_DestroyWindow(window);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyTexture(screen);
-	SDL_Quit();
-}
 
 
 mpoint2d vector_translate_gfx(mpoint2d *vector_space, unsigned int screen_width, unsigned int screen_height) {

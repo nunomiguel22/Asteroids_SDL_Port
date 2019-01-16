@@ -57,11 +57,6 @@ typedef struct {
 	Pixmap asteroid_dest2;
 	Pixmap asteroid_dest3;
 
-	Pixmap ship_red;
-	Pixmap ship_red_bt;
-	Pixmap ship_red_pt;
-	Pixmap ship_red_st;
-
 	Pixmap cursor;
 	Pixmap crosshair;
 	Pixmap blue_laser;
@@ -108,6 +103,8 @@ typedef struct {
 	Bitmap pix_ship_blue_bt;
 	Bitmap pix_ship_blue_st;
 	Bitmap pix_ship_blue_pt;
+	Bitmap p_arrow;
+	Bitmap slidemarker;
 }bitmap_data;
 
 

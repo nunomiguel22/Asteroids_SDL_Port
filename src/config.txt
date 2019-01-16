@@ -4,3 +4,7 @@ Fullscreen 0
 Fullscreen_native_stretched 0
 Borderless 0
 V-sync 0
+fps 1
+fps_counter 1
+music_volume 2
+effects_volume 3

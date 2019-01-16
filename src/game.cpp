@@ -2,22 +2,87 @@
 #include "SDL.h"
 #include "vcard.h"
 #include <time.h>
+#include <SDL_mixer.h>
+
+int game_data_init(game_data *game) {
+
+	/* Set number of threads*/
+	game->threads.resize(8);
+
+	/* Load sound files */
+	load_sounds(&game->sound, game->settings.music_volume, game->settings.effects_volume);
+
+	/* Load highscores */
+	if (!load_highscores(game->highscores))
+		for (int i = 0; i < 5; i++)
+			game->highscores[i] = 0;
+
+	/* Initiate variables */
+	game->timers.timerTick = 0;
+	game->timers.start_seq = 3;
+	game->state = MENU;
+	game->timers.cyclecounter = 0;
+	game->alien.active = false;
+
+	/* Load pixmaps into memory*/
+	load_xpms(&game->xpm);
+
+	/* Load bitmaps into memory*/
+	if (load_bitmaps(&game->bmp))
+		return 1;
+
+	return 0;
+}
+
+void start_timers(game_timers *timers) {
+
+	timers->framecounter = 1;
+	timers->frames_per_second = 0;
+	timers->cyclecounter = 0;
+	timers->player1_weapon_timer = 0;
+	timers->player2_weapon_timer = 0;
+	timers->teleport_timer = 0;
+	timers->round_timer = 0;
+	timers->alien_death_timer = 0;
+}
+
+void increment_timers(game_timers *timers) {
+	
+	timers->timerTick++;
+	timers->player1_weapon_timer++;
+	timers->player2_weapon_timer++;
+	timers->alien_weapon_timer++;
+	timers->teleport_timer++;
+	timers->round_timer++;
+	if (timers->alien_death_timer > 0)
+		timers->alien_death_timer--;
+}
 
 
 void physics_update(int id, game_data &game) {
 
-
+	/* Asteroid update and collision */
 	ast_update(game.asteroid_field);
-	ast_collision(game.asteroid_field, &game.player1, &game.alien);
+	if (ast_collision(game.asteroid_field, &game.player1, &game.alien))
+		game.threads.push(play_sound, std::ref(*game.sound.pop));
+
+	/* Player ship update */
 	ship_update(&game.player1);
+
+	/* Alien ship update and collision */
 	if (game.alien.active) {
 		alien_update(&game.alien, &game.player1, &game.timers);
 		alien_collision(&game.alien, &game.player1, &game.timers);
+		if (!game.alien.active)
+			game.threads.push(play_sound, std::ref(*game.sound.pop));
 	}
+
+	/* Make player ship invulnerable at the start of the round */
 	if (game.timers.round_timer <= 30)
 		game.player1.invulnerability = true;
 	else game.player1.invulnerability = false;
 
+	/* Stop game on 0 HP */
 	if (game.player1.hp <= 0) {
 		game.player1.hp = 0;
 		game.state = LOSS;
@@ -42,21 +107,93 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 		break;
 	}
 	case OPTIONSMENU: {
+		/* FPS Counter */
 		if (game->settings.fps_counter)
-			game->bmp.boxticked.draw(369, 173);
-
+			game->bmp.boxticked.draw(348, 270);
+		/* Vsync */
+		if (game->settings.vsync)
+			game->bmp.boxticked.draw(151, 268);
+		/* Resolution */
+		if (game->settings.hresolution == 1920)
+			game->bmp.p_arrow.draw(55,150);
+		else if (game->settings.hresolution == 1600)
+			game->bmp.p_arrow.draw(62, 173);
+		else if (game->settings.hresolution == 1280)
+			game->bmp.p_arrow.draw(52, 196);
+		else if (game->settings.hresolution == 1024)
+			game->bmp.p_arrow.draw(60, 217);
+		/* Display Mode */
+		if (game->settings.fullscreen)
+			game->bmp.p_arrow.draw(306, 147);
+		else if(game->settings.fullscreennative)
+			game->bmp.p_arrow.draw(222, 171);
+		else if (game->settings.borderless)
+			game->bmp.p_arrow.draw(300, 196);
+		else game->bmp.p_arrow.draw(295, 221);
+		/* FPS */
 		if (!game->settings.fps)
-			game->bmp.boxticked.draw(870, 74);
+			game->bmp.p_arrow.draw(500, 147);
 		else if (game->settings.fps == 1)
-			game->bmp.boxticked.draw(661, 75);
-		else game->bmp.boxticked.draw(548, 77);
+			game->bmp.p_arrow.draw(555, 168);
+		else if (game->settings.fps == 2)
+			game->bmp.p_arrow.draw(555, 193);
+		/* Music Volume */
+		switch (game->settings.music_volume) {
+			case 0: {
+				game->bmp.slidemarker.draw(205, 382);
+				break;
+			}
+			case 1: {
+				game->bmp.slidemarker.draw(232, 382);
+				break;
+			}
+			case 2: {
+				game->bmp.slidemarker.draw(258, 382);
+				break;
+			}
+			case 3: {
+				game->bmp.slidemarker.draw(285, 382);
+				break;
+			}
+			case 4: {
+				game->bmp.slidemarker.draw(312, 382);
+				break;
+			}
+			case 5: {
+				game->bmp.slidemarker.draw(339, 382);
+				break;
+			}
+			default: break;
+		}
 
-
-		if (game->settings.m_sens < 1)
-			game->bmp.boxticked.draw(583, 99);
-		else if (game->settings.m_sens == 1)
-			game->bmp.boxticked.draw(712, 100);
-		else game->bmp.boxticked.draw(838, 100);
+		/* Effects Volume */
+		switch (game->settings.effects_volume) {
+		case 0: {
+			game->bmp.slidemarker.draw(205, 454);
+			break;
+		}
+		case 1: {
+			game->bmp.slidemarker.draw(232, 454);
+			break;
+		}
+		case 2: {
+			game->bmp.slidemarker.draw(258, 454);
+			break;
+		}
+		case 3: {
+			game->bmp.slidemarker.draw(285, 454);
+			break;
+		}
+		case 4: {
+			game->bmp.slidemarker.draw(312, 454);
+			break;
+		}
+		case 5: {
+			game->bmp.slidemarker.draw(339, 454);
+			break;
+		}
+		default: break;
+		}
 
 		break;
 	}
@@ -69,55 +206,7 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 	display_frame();
 }
 
-void start_timers(game_timers *timers) {
 
-	timers->framecounter = 1;
-	timers->frames_per_second = 0;
-	timers->cyclecounter = 0;
-	timers->player1_weapon_timer = 0;
-	timers->player2_weapon_timer = 0;
-	timers->teleport_timer = 0;
-	timers->round_timer = 0;
-	timers->alien_death_timer = 0;
-}
-
-void increment_timers(game_timers *timers) {
-	timers->timerTick++;
-	timers->player1_weapon_timer++;
-	timers->player2_weapon_timer++;
-	timers->alien_weapon_timer++;
-	timers->teleport_timer++;
-	timers->round_timer++;
-	if (timers->alien_death_timer > 0)
-		timers->alien_death_timer--;
-
-}
-
-
-
-int game_data_init(game_data *game) {
-	game->threads.resize(8);
-
-	if (!load_highscores(game->highscores))
-		for (int i = 0; i < 5; i++)
-			game->highscores[i] = 0;
-
-	game->timers.timerTick = 0;
-	game->timers.start_seq = 3;
-	game->state = MENU;
-	game->timers.cyclecounter = 0;
-
-	game->settings.fps_counter = true;
-	game->settings.fps = 1;
-	game->settings.m_sens = 1;
-	game->alien.active = false;
-	load_xpms(&game->xpm);
-	
-	if (load_bitmaps(&game->bmp))
-		return 1;
-
-	return 0;
-}
 
 void event_handler(game_data* game) {
 
@@ -227,32 +316,117 @@ void game_state_machine(game_data* game) {
 			break;
 		}
 		case OPTIONSMENU: {
+			static bool gfxchange = false;
+
 			if (game->event == TIMER) {
 				handle_menu_frame(game, &game->bmp.options);
 			}
 			if (game->event == MOUSE) {
 				if (game->SDLevent.button.button == SDL_BUTTON_LEFT) {
-					if (game->SDLevent.motion.y >= 74 && game->SDLevent.motion.y <= 98) {
-						if (game->SDLevent.motion.x >= 547 && game->SDLevent.motion.x <= 567)
-							game->settings.fps = 2;
-						else if (game->SDLevent.motion.x >= 660 && game->SDLevent.motion.x <= 680)
-							game->settings.fps = 1;
-						else if (game->SDLevent.motion.x >= 870 && game->SDLevent.motion.x <= 890)
-							game->settings.fps = 0;
-					}
-					if (game->SDLevent.motion.y >= 99 && game->SDLevent.motion.y <= 120) {
-						if (game->SDLevent.motion.x >= 583 && game->SDLevent.motion.x <= 603)
-							game->settings.m_sens = 0.5;
-						else if (game->SDLevent.motion.x >= 712 && game->SDLevent.motion.x <= 732)
-							game->settings.m_sens = 1;
-						else if (game->SDLevent.motion.x >= 838 && game->SDLevent.motion.x <= 858)
-							game->settings.m_sens = 2;
-					}
-					if (game->SDLevent.motion.y >= 173 && game->SDLevent.motion.y <= 193 && game->SDLevent.motion.x >= 368 && game->SDLevent.motion.x <= 389)
-						game->settings.fps_counter ^= 1;
 
-					if (game->SDLevent.motion.y >= 704 && game->SDLevent.motion.y <= 756 && game->SDLevent.motion.x >= 13 && game->SDLevent.motion.x <= 125)
+					/* Display mode options*/
+					if (game->SDLevent.motion.x >= 215 && game->SDLevent.motion.x <= 410) {
+						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167)
+							game->settings.fullscreen = true;
+						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192) {
+							game->settings.fullscreennative = true;
+							game->settings.fullscreen = false;
+						}
+						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215) {
+							game->settings.fullscreennative = false;
+							game->settings.fullscreen = false;
+							game->settings.borderless = true;
+						}
+						else if (game->SDLevent.motion.y >= 217 && game->SDLevent.motion.y <= 240) {
+							game->settings.fullscreennative = false;
+							game->settings.fullscreen = false;
+							game->settings.borderless = false;
+						}
+							
+					}
+					/* Resolution options*/
+					if (game->SDLevent.motion.x >= 37 && game->SDLevent.motion.x <= 158) {
+						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167) {
+							game->settings.vresolution = 1080;
+							game->settings.hresolution = 1920;
+						}
+						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192) {
+							game->settings.vresolution = 900;
+							game->settings.hresolution = 1600;
+						}
+						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215) {
+							game->settings.vresolution = 1024;
+							game->settings.hresolution = 1280;
+						}
+						else if (game->SDLevent.motion.y >= 217 && game->SDLevent.motion.y <= 240) {
+							game->settings.vresolution = 768;
+							game->settings.hresolution = 1024;
+						}
+
+					}
+					/* FPS options*/
+					if (game->SDLevent.motion.x >= 445 && game->SDLevent.motion.x <= 610) {
+						if (game->SDLevent.motion.y >= 147 && game->SDLevent.motion.y <= 167)
+							game->settings.fps = 0;
+						else if (game->SDLevent.motion.y >= 169 && game->SDLevent.motion.y <= 192)
+							game->settings.fps = 1;
+						else if (game->SDLevent.motion.y >= 194 && game->SDLevent.motion.y <= 215)
+							game->settings.fps = 2;
+					}
+
+					/* Music volume options*/
+					if (game->SDLevent.motion.y >= 386 && game->SDLevent.motion.y <= 406) {
+						if (game->SDLevent.motion.x >= 208 && game->SDLevent.motion.x <= 217)
+							game->settings.music_volume = 0;
+						else if (game->SDLevent.motion.x >= 236 && game->SDLevent.motion.x <= 245)
+							game->settings.music_volume = 1;
+						else if (game->SDLevent.motion.x >= 260 && game->SDLevent.motion.x <= 269)
+							game->settings.music_volume = 2;
+						else if (game->SDLevent.motion.x >= 287 && game->SDLevent.motion.x <= 296)
+							game->settings.music_volume = 3;
+						else if (game->SDLevent.motion.x >= 313 && game->SDLevent.motion.x <= 322)
+							game->settings.music_volume = 4;
+						else if (game->SDLevent.motion.x >= 340 && game->SDLevent.motion.x <= 349)
+							game->settings.music_volume = 5;
+					}
+
+					/* Music volume options*/
+					if (game->SDLevent.motion.y >= 458 && game->SDLevent.motion.y <= 478) {
+						if (game->SDLevent.motion.x >= 208 && game->SDLevent.motion.x <= 217)
+							game->settings.effects_volume = 0;
+						else if (game->SDLevent.motion.x >= 236 && game->SDLevent.motion.x <= 245)
+							game->settings.effects_volume = 1;
+						else if (game->SDLevent.motion.x >= 260 && game->SDLevent.motion.x <= 269)
+							game->settings.effects_volume = 2;
+						else if (game->SDLevent.motion.x >= 287 && game->SDLevent.motion.x <= 296)
+							game->settings.effects_volume = 3;
+						else if (game->SDLevent.motion.x >= 313 && game->SDLevent.motion.x <= 322)
+							game->settings.effects_volume = 4;
+						else if (game->SDLevent.motion.x >= 340 && game->SDLevent.motion.x <= 349)
+							game->settings.effects_volume = 5;
+					}
+				
+					/* FPS counter option*/
+					if (game->SDLevent.motion.y >= 270 && game->SDLevent.motion.y <= 290 && game->SDLevent.motion.x >= 345 && game->SDLevent.motion.x <= 370)
+						game->settings.fps_counter ^= 1;
+					/* Vsync option*/
+					if (game->SDLevent.motion.y >= 270 && game->SDLevent.motion.y <= 290 && game->SDLevent.motion.x >= 147 && game->SDLevent.motion.x <= 174)
+						game->settings.vsync ^= 1;
+					/* Cancel Button */
+					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 38 && game->SDLevent.motion.x <= 185) {
+						read_video_settings(&game->settings);
 						game->state = MENU;
+					}
+					/* Apply Button */
+					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 846 && game->SDLevent.motion.x <= 995) {
+						change_volume(&game->sound, game->settings.effects_volume, game->settings.music_volume);
+						reset_sdl(&game->settings);
+						save_video_settings(&game->settings);
+						game->state = MENU;
+					}
+					/* Reset Button */
+					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 235 && game->SDLevent.motion.x <= 718) 
+						reset_video_settings(&game->settings);
 				}
 			}
 			break;
@@ -261,13 +435,16 @@ void game_state_machine(game_data* game) {
 		case START_SEQUENCE: {
 			if (game->event == TIMER) {
 
+				/* First second of sequence iniate player ship, reset alien ship*/
 				if (game->timers.start_seq == 3) {
+					game->threads.push(play_music, std::ref(*game->sound.kawaii));
 					game->timers.timerTick = 0;
 					ship_spawn(&game->player1);
 					if (game->alien.active)
 						game->alien.active = false;
 				}
 
+				/* Last second of sequence initiate game timers, start game*/
 				if (game->timers.start_seq == 0 && (game->timers.timerTick % 60 == 0)) {
 					game->s_event = IDLING;
 					start_timers(&game->timers);
@@ -275,6 +452,7 @@ void game_state_machine(game_data* game) {
 					break;
 				}
 
+				/* Update screen 60 times a second */
 				if (game->timers.timerTick % 60 == 0) {
 					render_seq_frame(game);
 					display_frame();
@@ -320,6 +498,7 @@ void game_state_machine(game_data* game) {
 			break;
 		}
 		case LOSS: {
+			game->threads.push(stop_music);
 			static bool highscore;
 			static bool first_frame = true;
 			if (first_frame) {
@@ -362,8 +541,10 @@ void game_state_machine(game_data* game) {
 			if (game->event == KEYBOARD) {
 				if (game->s_event == K_ESC)
 					game->state = PLAYING;
-				else if (game->s_event == QUIT)
+				else if (game->s_event == QUIT) {
+					game->threads.push(stop_music);
 					game->state = MENU;
+				}
 			}
 			break;
 		}
@@ -391,12 +572,14 @@ void playing_event_handler(game_data* game) {
 
 		case MOUSE: {
 			/* Update the crosshair's position */
-			game->player1.crosshair.x = (game->SDLevent.motion.x - hres / 2) * game->settings.m_sens;
-			game->player1.crosshair.y = (vres / 2 - game->SDLevent.motion.y) * game->settings.m_sens;
+			game->player1.crosshair.x = (game->SDLevent.motion.x - hres / 2);
+			game->player1.crosshair.y = (vres / 2 - game->SDLevent.motion.y);
 
 			/* Fire lasers */
-			if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->player1.weapon_ready)
+			if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->player1.weapon_ready) {
 				ship_fire_laser(&game->player1, &game->timers.player1_weapon_timer);
+				game->threads.push(play_sound, std::ref(*game->sound.laser));
+			}
 
 			/* Teleport */
 			if (game->SDLevent.button.button == SDL_BUTTON_RIGHT && game->player1.jump_ready)

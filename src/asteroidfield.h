@@ -41,7 +41,7 @@ void ast_spawn(asteroid asteroid_field[], player *player1);
 * @param player1 Player1 struct
 * @param alien Alien struct
 */
-void ast_collision(asteroid asteroid_field[], player *player1, player *alien);
+int ast_collision(asteroid asteroid_field[], player *player1, player *alien);
 /**
 * @brief Updates the position of all active asteroids, when crossing screen bounds warps asteroid to the other edge of the screen
 *

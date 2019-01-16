@@ -265,6 +265,10 @@ int load_bitmaps(bitmap_data *bmp) {
 		bmp->pix_ship_blue_pt.load("textures/pix_ship_blue_pt.bmp");
 	while (bmp->pix_ship_blue_st.load("textures/pix_ship_blue_st.bmp"))
 		bmp->pix_ship_blue_st.load("textures/pix_ship_blue_st.bmp");
+	while (bmp->p_arrow.load("textures/parrow.bmp"))
+		bmp->p_arrow.load("textures/parrow.bmp");
+	while (bmp->slidemarker.load("textures/slidemarker.bmp"))
+		bmp->slidemarker.load("textures/slidemarker.bmp");
 	return 0;
 }
 

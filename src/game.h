@@ -1,29 +1,36 @@
 #pragma once
 #include "mvector.h"
 #include "SDL.h"
+#include "SDL_mixer.h"
 #include "graphics.h"
 #include "macros.h"
 #include "ship.h"
 #include "asteroidfield.h"
 #include "ctpl_stl.h"
+#include "scard.h"
 
 typedef enum { KEYBOARD, MOUSE, TIMER} event_type;
 
 /** @brief Enum with all gamestates */
 typedef enum { MENU, OPTIONSMENU, START_SEQUENCE, PLAYING, NEW_ROUND, LOSS, GAMEPAUSED, CONNECTING, COMP } game_sts;
 
-/** @brief Saves the menu's settings */
+
 typedef struct {
-	int fps;										/**< @brief Frames per second */
-	float m_sens;									/**< @brief Mouse sensitivity */
-	bool page_flip;									/**< @brief Page flipping */
-	bool vsync;										/**< @brief Vertical sync */
-	bool fps_counter;								/**< @brief In game frame counter */
-}menu_options;
+	uint32_t hresolution;
+	uint32_t vresolution;
+	bool fullscreen;
+	bool fullscreennative;
+	bool borderless;
+	bool vsync;
+	bool fps_counter;
+	int fps;
+	int effects_volume;
+	int music_volume;
+}game_settings;
 
 /** @brief Main game data structure */
 typedef struct {
-	ctpl::thread_pool threads;
+	ctpl::thread_pool threads;						/**< @brief Processor threads */
 	game_sts state;									/**< @brief Current game state */
 	game_timers timers;								/**< @brief Struct with the game's timers */
 	player player1;									/**< @brief Player1, this is always the ship controlled by this computer */
@@ -39,7 +46,8 @@ typedef struct {
 	char FILEPATH[50];								/**< @brief Filepath to game folder */
 	bitmap_data bmp;								/**< @brief All bmps images */
 	pixmap_data xpm;								/**< @brief All pixmaps */
-	menu_options settings;							/**< @brief Options menu's settings */
+	sound_data sound;
+	game_settings settings;							/**< @brief Options menu's settings */
 
 } game_data;
 

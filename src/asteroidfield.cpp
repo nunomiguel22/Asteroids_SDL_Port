@@ -64,7 +64,9 @@ void ast_spawn(asteroid asteroid_field[], player *player1) {
 	}
 }
 
-void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
+int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
+
+	bool collision = false;
 
 	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
 		if (!asteroid_field[i].active && asteroid_field[i].death_timer > 0)
@@ -83,6 +85,7 @@ void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 
 					mvector2d v_ast_laser(player1->lasers[j].position, asteroid_field[i].position);
 					if (v_ast_laser.magnitude() <= asteroid_field[i].hit_radius) {
+						collision = true;
 						asteroid_field[i].active = false;
 						player1->lasers[j].active = false;
 						asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
@@ -101,6 +104,7 @@ void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			mvector2d v_ast_ship(player1->pivot, asteroid_field[i].position);
 			double total_radius = player1->hit_radius + asteroid_field[i].hit_radius;
 			if (total_radius > v_ast_ship.magnitude()) {
+				collision = true;
 				asteroid_field[i].active = false;
 				if (asteroid_field[i].size == LARGE) {
 					if (!player1->invulnerability) {
@@ -126,6 +130,8 @@ void ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			player1->end_round = false;
 
 	}
+	return collision;
+
 }
 
 void ast_update(asteroid asteroid_field[]) {
