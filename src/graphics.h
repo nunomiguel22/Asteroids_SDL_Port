@@ -1,6 +1,5 @@
 #pragma once
 #include <stdint.h>
-#include <string>
 
 
 typedef struct {
@@ -26,7 +25,7 @@ typedef struct {
 } BitmapInfoHeader;
 
 class Bitmap {
-	BitmapInfoHeader bitmapinfoheader;
+	BitmapInfoHeader infoheader;
 	uint8_t *bitmapdata;
 public:
 	Bitmap() {};
@@ -34,7 +33,9 @@ public:
 	uint8_t* getBitmapData();
 	int load(const char* filepath);
 	void draw(int x, int y);
-	void draw_rot(int gx, int gy, double rotation_degrees);
+	void draw_transform(int gx, int gy, double rotation_degrees, double scale);
+	void draw_colorswap(int gx, int gy, uint32_t originalcolor, uint32_t newcolor);
+	void verticalflip();
 };
 
 class Pixmap {
@@ -47,7 +48,7 @@ public:
 	int getWidth();
 	uint32_t* getMap();
 	int read(const char *map[]);
-	void draw(int gx, int gy, double rotation_degrees);
+	void draw(int gx, int gy);
 };
 
 //GAME DATA

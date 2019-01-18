@@ -1,32 +1,20 @@
 #pragma once
+#include <ctpl_stl.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
+
 #include "mvector.h"
-#include "SDL.h"
-#include "SDL_mixer.h"
 #include "graphics.h"
 #include "macros.h"
 #include "ship.h"
 #include "asteroidfield.h"
-#include "ctpl_stl.h"
-#include "scard.h"
+#include "sound.h"
+#include "utils.h"
 
 typedef enum { KEYBOARD, MOUSE, TIMER} event_type;
 
 /** @brief Enum with all gamestates */
 typedef enum { MENU, OPTIONSMENU, START_SEQUENCE, PLAYING, NEW_ROUND, LOSS, GAMEPAUSED, CONNECTING, COMP } game_sts;
-
-
-typedef struct {
-	uint32_t hresolution;
-	uint32_t vresolution;
-	bool fullscreen;
-	bool fullscreennative;
-	bool borderless;
-	bool vsync;
-	bool fps_counter;
-	int fps;
-	int effects_volume;
-	int music_volume;
-}game_settings;
 
 /** @brief Main game data structure */
 typedef struct {
@@ -54,25 +42,12 @@ typedef struct {
 
 
 /**
-* @brief This function does all singleplayer physics operations
+* @brief Initiates/resets all game data
 *
 * @param game General game struct
+* @returns 0 if successful, 1 otherwise
 */
-void physics_update(int id, game_data &game);
-/**
-* @brief This function does all multiplayer physics operations
-*
-* @param game General game struct
-*/
-
-void handle_frame(game_data &game);
-/**
-* @brief Renders multiplayer frames, allows for page flipping and vsync. Clears the local pixel buffer
-*
-* @param game General game struct
-*/
-
-void handle_menu_frame(game_data *game, Bitmap *bckgrd);
+int game_data_init(game_data *game);
 /**
 * @brief Initiates/resets all game timers
 *
@@ -80,12 +55,17 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd);
 */
 void start_timers(game_timers *timers);
 /**
-* @brief Initiates/resets all game data
+* @brief Increments all game timers
+*
+* @param timers Game timers
+*/
+void increment_timers(game_timers *timers);
+/**
+* @brief This function does all singleplayer physics operations
 *
 * @param game General game struct
-* @returns 0 if successful, 1 otherwise
 */
-int game_data_init(game_data *game);
+void physics_update(int id, game_data &game);
 /**
 * @brief Main loop, handles all interrupt events
 *

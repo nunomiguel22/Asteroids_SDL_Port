@@ -4,7 +4,6 @@
 
 //Technical
 #define PHYSICS_TICKS 1 //1 - 60 ticks/s(recommended), 2 - 30 ticks/s, 3 - 20 tick/s, 4- 15 ticks/s, 5 12 ticks/s
-#define MOUSE_SENSITIVITY 1 //Crosshair speed
 
 //Ship
 #define FIRE_RATE 3 //Lasers per second

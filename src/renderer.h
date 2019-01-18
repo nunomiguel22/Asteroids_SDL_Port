@@ -1,16 +1,13 @@
 #pragma once
 #include <stdint.h>
+
+
 #include "game.h"
 #include "mvector.h"
-
-void read_video_settings(game_settings *settings);
-void reset_video_settings(game_settings *settings);
-void save_video_settings(game_settings *settings);
 
 uint8_t* init_sdl(game_settings *settings);
 void  exit_sdl();
 void reset_sdl(game_settings *settings);
-
 int draw_pixel(int x, int y, uint32_t color);
 void display_frame();
 
@@ -26,6 +23,7 @@ void draw_ast(asteroid *ast, Bitmap *bmp);
 void render_frame(game_data *game);
 void render_seq_frame(game_data *game);
 
+void handle_frame(game_data *game);
+void handle_menu_frame(game_data *game, Bitmap *bckgrd);
 
-
-mpoint2d vector_translate_gfx(mpoint2d *vector_space, unsigned int screen_width, unsigned int screen_height);
+mpoint2d vector_translate_gfx(mpoint2d *cartesian, unsigned int width, unsigned int height);

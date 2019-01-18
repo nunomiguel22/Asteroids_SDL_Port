@@ -1,5 +1,7 @@
-#include "asteroidfield.h"
 #include <stdlib.h>
+
+#include "asteroidfield.h"
+
 
 void ast_spawn(asteroid asteroid_field[], player *player1) {
 

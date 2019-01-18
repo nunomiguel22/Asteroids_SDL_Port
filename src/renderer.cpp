@@ -1,8 +1,9 @@
-#include "vcard.h"
-#include "SDL.h"
+#include <SDL.h>
+
+#include "renderer.h"
 #include "macros.h"
-#include "fstream"
-#include <iostream>
+
+
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer;
@@ -12,86 +13,11 @@ uint8_t *pixelbuffer;
 const int pixel_bytes = 4;
 const int vram_size = hres * vres * pixel_bytes;
 
-using namespace std;
-
-void read_video_settings(game_settings *settings) {
-
-	ifstream file;
-
-	file.open("config.txt");
-	
-	if (!file.is_open()) {
-		reset_video_settings(settings);
-		return;
-	}
-	
-	file.ignore(22);
-	file >> settings->hresolution;
-	file.ignore(20);
-	file >> settings->vresolution;
-	file.ignore(11);
-	file >> settings->fullscreen;
-	file.ignore(28);
-	file >> settings->fullscreennative;
-	file.ignore(11);
-	file >> settings->borderless;
-	file.ignore(7);
-	file >> settings->vsync;
-	file.ignore(4);
-	file >> settings->fps;
-	file.ignore(12);
-	file >> settings->fps_counter;
-	file.ignore(13);
-	file >>settings->music_volume;
-	file.ignore(16);
-	file >> settings->effects_volume;
-
-	file.close();
-}
-
-void reset_video_settings(game_settings *settings) {
-
-	settings->vresolution = 768;
-	settings->hresolution = 1024;
-	settings->fullscreen = false;
-	settings->fullscreennative = false;
-	settings->vsync = false;
-	settings->borderless = false;
-	settings->fps_counter = true;
-	settings->music_volume = 2;
-	settings->effects_volume = 3;
-	settings->fps = 1;
-}
-
-void save_video_settings(game_settings *settings) {
-
-	ofstream file;
-
-	file.open("config.txt");
-
-	file << "Horizontal_resolution " << settings->hresolution << endl;
-	file << "Vertical_resolution " << settings->vresolution << endl;
-	file << "Fullscreen " << settings->fullscreen << endl;
-	file << "Fullscreen_native_stretched " << settings->fullscreennative << endl;
-	file << "Borderless " << settings->borderless << endl;
-	file << "V-sync " << settings->vsync << endl;
-	file << "fps " << settings->fps << endl;
-	file << "fps_counter " << settings->fps_counter << endl;
-	file << "music_volume " << settings->music_volume << endl;
-	file << "effects_volume " << settings->effects_volume;
-
-	file.close();
-
-}
 
 uint8_t * init_sdl(game_settings *settings) {
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-
-		cout << "SDL could not initialize! SDL_Error:" << SDL_GetError() << endl;
-
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		return NULL;
-	}
 
 	uint32_t windowFlags = SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
 
@@ -116,9 +42,7 @@ uint8_t * init_sdl(game_settings *settings) {
 	SDL_ShowCursor(SDL_DISABLE);
 
 	if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1)
-	{
 		return NULL;
-	}
 
 	return pixelbuffer;
 }
@@ -192,23 +116,23 @@ void show_splash(game_data *game) {
 	SDL_Delay(3000);
 	display_frame();
 	game->bmp.menubackground.draw(0, 0);
-	game->xpm.cursor.draw(hres / 2, vres / 2, false);
+	game->xpm.cursor.draw(hres / 2, vres / 2);
 	display_frame();
 }
 
 void draw_digit(unsigned int num, int x, int y, game_data *game)
 {
 	switch (num) {
-	case 0: game->xpm.n_zero.draw(x, y, false); break;
-	case 1: game->xpm.n_one.draw(x, y, false); break;
-	case 2: game->xpm.n_two.draw(x, y, false); break;
-	case 3: game->xpm.n_three.draw(x, y, false); break;
-	case 4: game->xpm.n_four.draw(x, y, false); break;
-	case 5: game->xpm.n_five.draw(x, y, false); break;
-	case 6: game->xpm.n_six.draw(x, y, false); break;
-	case 7: game->xpm.n_seven.draw(x, y, false); break;
-	case 8: game->xpm.n_eight.draw(x, y, false); break;
-	case 9: game->xpm.n_nine.draw(x, y, false); break;
+	case 0: game->xpm.n_zero.draw(x, y); break;
+	case 1: game->xpm.n_one.draw(x, y); break;
+	case 2: game->xpm.n_two.draw(x, y); break;
+	case 3: game->xpm.n_three.draw(x, y); break;
+	case 4: game->xpm.n_four.draw(x, y); break;
+	case 5: game->xpm.n_five.draw(x, y); break;
+	case 6: game->xpm.n_six.draw(x, y); break;
+	case 7: game->xpm.n_seven.draw(x, y); break;
+	case 8: game->xpm.n_eight.draw(x, y); break;
+	case 9: game->xpm.n_nine.draw(x, y); break;
 
 	default: break;
 	}
@@ -217,9 +141,9 @@ void draw_digit(unsigned int num, int x, int y, game_data *game)
 void draw_large_digit(unsigned int num, int x, int y, game_data *game) {
 
 	switch (num) {
-	case 1:	game->xpm.n_one_large.draw(x, y, false); break;
-	case 2: game->xpm.n_two_large.draw(x, y, false); break;
-	case 3: game->xpm.n_three_large.draw(x, y, false); break;
+	case 1:	game->xpm.n_one_large.draw(x, y); break;
+	case 2: game->xpm.n_two_large.draw(x, y); break;
+	case 3: game->xpm.n_three_large.draw(x, y); break;
 	default: break;
 	}
 }
@@ -238,7 +162,7 @@ void draw_number(int number, int x, int y, game_data *game) {
 			break;
 	}
 
-	for (int i = 0; i < size; i++) {
+	for (int i = 0; i < size; ++i) {
 		draw_digit(reverse_number % 10, x, y, game);
 		reverse_number = (int)floor(reverse_number / 10);
 		x += 10;
@@ -262,20 +186,20 @@ void draw_ship(Bitmap *bmp, player *p) {
 	else degrees = vmouse.angle();
 
 	mpoint2d ws_pivot = vector_translate_gfx(&p->pivot, 1024, 768);
-	bmp->draw_rot((int)ws_pivot.x, (int)ws_pivot.y, degrees);
+	bmp->draw_transform((int)ws_pivot.x, (int)ws_pivot.y, degrees, 1);
 }
 
 void draw_alien(game_data *game) {
 	if (game->alien.active) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
 		mvector2d vcannon (game->alien.pivot, game->alien.cannon);
-		game->bmp.alien_ship.draw_rot((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle());
+		game->bmp.alien_ship.draw_transform((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle(), 1);
 
 		//Draw alien lasers
 		for (int i = 0; i < AMMO; i++) {
 			if (game->alien.lasers[i].active) {
 				mpoint2d ws_laser = vector_translate_gfx(&game->alien.lasers[i].position, 1024, 768);
-				game->xpm.red_laser.draw((int)ws_laser.x, (int)ws_laser.y, 0);
+				game->xpm.red_laser.draw((int)ws_laser.x, (int)ws_laser.y);
 			}
 		}
 	}
@@ -283,15 +207,15 @@ void draw_alien(game_data *game) {
 	else if (game->timers.alien_death_timer > 0) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
 		if (game->timers.alien_death_timer > 20) {
-			game->xpm.asteroid_dest1.draw ((int)ws_pivot.x, (int)ws_pivot.y, false);
+			game->xpm.asteroid_dest1.draw ((int)ws_pivot.x, (int)ws_pivot.y);
 			game->bmp.alien_score.draw ((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
 		}
 		else if (game->timers.alien_death_timer > 10) {
-			game->xpm.asteroid_dest2.draw((int)ws_pivot.x, (int)ws_pivot.y, false);
+			game->xpm.asteroid_dest2.draw((int)ws_pivot.x, (int)ws_pivot.y);
 			game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
 		}
 		else {
-			game->xpm.asteroid_dest3.draw((int)ws_pivot.x, (int)ws_pivot.y, false);
+			game->xpm.asteroid_dest3.draw((int)ws_pivot.x, (int)ws_pivot.y);
 			game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
 		}
 	}
@@ -301,7 +225,7 @@ void draw_alien(game_data *game) {
 void draw_ast(asteroid *ast, Bitmap *bmp) {
 
 	mpoint2d ws_ast = vector_translate_gfx(&ast->position, 1024, 768);
-	bmp->draw_rot((int)ws_ast.x, (int)ws_ast.y, ast->degrees);
+	bmp->draw_transform((int)ws_ast.x, (int)ws_ast.y, ast->degrees, 1);
 }
 
 void render_frame(game_data *game) {
@@ -309,7 +233,7 @@ void render_frame(game_data *game) {
 	game->bmp.game_background.draw(0, 0);
 
 	mpoint2d ws_mouse = vector_translate_gfx(&game->player1.crosshair, 1024, 768);
-	game->xpm.crosshair.draw((int)ws_mouse.x, (int)ws_mouse.y, 0);
+	game->xpm.crosshair.draw((int)ws_mouse.x, (int)ws_mouse.y);
 	switch (game->s_event) {
 
 		case MAIN_THRUSTER: {
@@ -339,7 +263,7 @@ void render_frame(game_data *game) {
 	for (int i = 0; i < AMMO; i++) {
 		if (game->player1.lasers[i].active) {
 			mpoint2d ws_laser = vector_translate_gfx(&game->player1.lasers[i].position, 1024, 768);
-			game->xpm.blue_laser.draw((int)ws_laser.x, (int)ws_laser.y, 0);
+			game->xpm.blue_laser.draw((int)ws_laser.x, (int)ws_laser.y);
 		}
 	}
 
@@ -362,15 +286,15 @@ void render_frame(game_data *game) {
 			else temp = game->bmp.large_score;
 
 			if (game->asteroid_field[i].death_timer > 20) {
-				game->xpm.asteroid_dest1.draw((int)ws_ast.x, (int)ws_ast.y, false);
+				game->xpm.asteroid_dest1.draw((int)ws_ast.x, (int)ws_ast.y);
 				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 			else if (game->asteroid_field[i].death_timer > 10) {
-				game->xpm.asteroid_dest2.draw((int)ws_ast.x, (int)ws_ast.y, false);
+				game->xpm.asteroid_dest2.draw((int)ws_ast.x, (int)ws_ast.y);
 				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 			else if (game->asteroid_field[i].death_timer > 0) {
-				game->xpm.asteroid_dest3.draw((int)ws_ast.x, (int)ws_ast.y, false);
+				game->xpm.asteroid_dest3.draw((int)ws_ast.x, (int)ws_ast.y);
 				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
 			}
 		}
@@ -379,18 +303,18 @@ void render_frame(game_data *game) {
 	//Draw FPS counter
 	if (game->settings.fps_counter) {
 		game->bmp.fps_header.draw(912, 3);
-		draw_number(game->timers.frames_per_second, 970, 17, game);
+		draw_number(game->timers.frames_per_second, 970, 10, game);
 	}
 
 	//Draw Score
 	game->bmp.score_header.draw (10, 4);
-	draw_number(game->player1.score, 80, 17, game);
+	draw_number(game->player1.score, 80, 10, game);
 
 	//Draw_HP
 	if (game->player1.hp > 30)
 		game->bmp.hp_header.draw (130, 4);
 	else game->bmp.hp_header_low.draw(130, 4);
-	draw_number(game->player1.hp, 175, 17, game);
+	draw_number(game->player1.hp, 175, 10, game);
 
 	//Draw Teleport Header
 	if (game->player1.jump_ready)
@@ -400,17 +324,148 @@ void render_frame(game_data *game) {
 	draw_alien(game);
 }
 
+void handle_frame(game_data *game) {
+
+	render_frame(game);
+	display_frame();
+	game->timers.framecounter++;
+}
+
+void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
+
+	bckgrd->draw(0, 0);
+
+	switch (game->state) {
+	case MENU: {
+		for (int i = 0; i < MAX_ASTEROIDS; i++) {
+			mpoint2d ws_ast = vector_translate_gfx(&game->menu_asteroid_field[i].position, 1024, 768);
+			//Active asteroids
+			if (game->menu_asteroid_field[i].active) {
+				if (game->menu_asteroid_field[i].size == MEDIUM)
+					draw_ast(&game->menu_asteroid_field[i], &game->bmp.medium_asteroid);
+				else draw_ast(&game->menu_asteroid_field[i], &game->bmp.large_asteroid);
+			}
+		}
+
+		game->bmp.hsbackground.draw(787, 1);
+		game->bmp.playbutton.draw(380, 200);
+		game->bmp.optionsbutton.draw(380, 300);
+		game->bmp.quitbutton.draw(380, 400);
+		for (int i = 0; i < 5; i++)
+			draw_number(game->highscores[i], 900, 60 + i * 40, game);
+		break;
+	}
+	case OPTIONSMENU: {
+		/* FPS Counter */
+		if (game->settings.fps_counter)
+			game->bmp.boxticked.draw(348, 270);
+		/* Vsync */
+		if (game->settings.vsync)
+			game->bmp.boxticked.draw(151, 268);
+		/* Resolution */
+		if (game->settings.hresolution == 1920)
+			game->bmp.p_arrow.draw(55, 150);
+		else if (game->settings.hresolution == 1600)
+			game->bmp.p_arrow.draw(62, 173);
+		else if (game->settings.hresolution == 1280)
+			game->bmp.p_arrow.draw(52, 196);
+		else if (game->settings.hresolution == 1024)
+			game->bmp.p_arrow.draw(60, 217);
+		/* Display Mode */
+		if (game->settings.fullscreen)
+			game->bmp.p_arrow.draw(306, 147);
+		else if (game->settings.fullscreennative)
+			game->bmp.p_arrow.draw(222, 171);
+		else if (game->settings.borderless)
+			game->bmp.p_arrow.draw(300, 196);
+		else game->bmp.p_arrow.draw(295, 221);
+		/* FPS */
+		if (!game->settings.fps)
+			game->bmp.p_arrow.draw(500, 147);
+		else if (game->settings.fps == 1)
+			game->bmp.p_arrow.draw(555, 168);
+		else if (game->settings.fps == 2)
+			game->bmp.p_arrow.draw(555, 193);
+		/* Music Volume */
+		switch (game->settings.music_volume) {
+		case 0: {
+			game->bmp.slidemarker.draw(205, 382);
+			break;
+		}
+		case 1: {
+			game->bmp.slidemarker.draw(232, 382);
+			break;
+		}
+		case 2: {
+			game->bmp.slidemarker.draw(258, 382);
+			break;
+		}
+		case 3: {
+			game->bmp.slidemarker.draw(285, 382);
+			break;
+		}
+		case 4: {
+			game->bmp.slidemarker.draw(312, 382);
+			break;
+		}
+		case 5: {
+			game->bmp.slidemarker.draw(339, 382);
+			break;
+		}
+		default: break;
+		}
+
+		/* Effects Volume */
+		switch (game->settings.effects_volume) {
+		case 0: {
+			game->bmp.slidemarker.draw(205, 454);
+			break;
+		}
+		case 1: {
+			game->bmp.slidemarker.draw(232, 454);
+			break;
+		}
+		case 2: {
+			game->bmp.slidemarker.draw(258, 454);
+			break;
+		}
+		case 3: {
+			game->bmp.slidemarker.draw(285, 454);
+			break;
+		}
+		case 4: {
+			game->bmp.slidemarker.draw(312, 454);
+			break;
+		}
+		case 5: {
+			game->bmp.slidemarker.draw(339, 454);
+			break;
+		}
+		default: break;
+		}
+
+		break;
+	}
+	default: break;
+
+	}
+
+	game->xpm.cursor.draw(game->SDLevent.motion.x, game->SDLevent.motion.y);
+
+	display_frame();
+}
 
 
-mpoint2d vector_translate_gfx(mpoint2d *vector_space, unsigned int screen_width, unsigned int screen_height) {
+
+mpoint2d vector_translate_gfx(mpoint2d *cartesian, unsigned int width, unsigned int height) {
 
 	mpoint2d gfx_point;
 	mpoint2d origin;
-	origin.x = screen_width / 2;
-	origin.y = screen_height / 2;
+	origin.x = width / 2;
+	origin.y = height / 2;
 
-	gfx_point.x = origin.x + vector_space->x;
-	gfx_point.y = origin.y - vector_space->y;
+	gfx_point.x = origin.x + cartesian->x;
+	gfx_point.y = origin.y - cartesian->y;
 
 	return gfx_point;
 }

@@ -1,12 +1,12 @@
-#include "scard.h"
+#include "sound.h"
 
 void load_sounds(sound_data *sounds, int eff_vol, int mus_vol) {
 
-	sounds->laser = Mix_LoadWAV("sounds/Laser_Gun.wav");
-	sounds->pop = Mix_LoadWAV("sounds/Pop.wav");
-	sounds->Beep_Short = Mix_LoadWAV("sounds/Beep_Short.wav");
-	sounds->kawaii = Mix_LoadMUS("sounds/Kawaii.wav");
-	sounds->galaxia = Mix_LoadMUS("sounds/Galaxia.wav");
+	sounds->laser = Mix_LoadWAV("Assets/sounds/Laser_Gun.wav");
+	sounds->pop = Mix_LoadWAV("Assets/sounds/Pop.wav");
+	sounds->Beep_Short = Mix_LoadWAV("Assets/sounds/Beep_Short.wav");
+	sounds->kawaii = Mix_LoadMUS("Assets/sounds/Kawaii.wav");
+	sounds->galaxia = Mix_LoadMUS("Assets/sounds/Galaxia.wav");
 	Mix_VolumeChunk(sounds->Beep_Short, (MIX_MAX_VOLUME / 20) * eff_vol);
 	Mix_VolumeChunk(sounds->laser, (MIX_MAX_VOLUME / 10) * eff_vol);
 	Mix_VolumeChunk(sounds->pop, (MIX_MAX_VOLUME / 10) * eff_vol);

@@ -1,8 +1,12 @@
-#include "game.h"
-#include "SDL.h"
-#include "vcard.h"
-#include <time.h>
+#include <SDL.h>
 #include <SDL_mixer.h>
+#include <time.h>
+
+
+#include "game.h"
+#include "renderer.h"
+#include "alien.h"
+
 
 int game_data_init(game_data *game) {
 
@@ -89,139 +93,6 @@ void physics_update(int id, game_data &game) {
 	}
 }
 
-void handle_frame(game_data *game) {
-
-	render_frame(game);
-	display_frame();
-	game->timers.framecounter++;
-}
-
-void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
-
-	bckgrd->draw(0, 0);
-
-	switch (game->state) {
-	case MENU: {
-		for (int i = 0; i < MAX_ASTEROIDS; i++) {
-			mpoint2d ws_ast = vector_translate_gfx(&game->menu_asteroid_field[i].position, 1024, 768);
-			//Active asteroids
-			if (game->menu_asteroid_field[i].active) {
-				if (game->menu_asteroid_field[i].size == MEDIUM)
-					draw_ast(&game->menu_asteroid_field[i], &game->bmp.medium_asteroid);
-				else draw_ast(&game->menu_asteroid_field[i], &game->bmp.large_asteroid);
-			}
-		}
-
-		game->bmp.hsbackground.draw(787, 1);
-		game->bmp.playbutton.draw(380, 200);
-		game->bmp.optionsbutton.draw(380, 300);
-		game->bmp.quitbutton.draw(380, 400);
-		for (int i = 0; i < 5; i++)
-			draw_number(game->highscores[i], 900, 60 + i * 40, game);
-		break;
-	}
-	case OPTIONSMENU: {
-		/* FPS Counter */
-		if (game->settings.fps_counter)
-			game->bmp.boxticked.draw(348, 270);
-		/* Vsync */
-		if (game->settings.vsync)
-			game->bmp.boxticked.draw(151, 268);
-		/* Resolution */
-		if (game->settings.hresolution == 1920)
-			game->bmp.p_arrow.draw(55,150);
-		else if (game->settings.hresolution == 1600)
-			game->bmp.p_arrow.draw(62, 173);
-		else if (game->settings.hresolution == 1280)
-			game->bmp.p_arrow.draw(52, 196);
-		else if (game->settings.hresolution == 1024)
-			game->bmp.p_arrow.draw(60, 217);
-		/* Display Mode */
-		if (game->settings.fullscreen)
-			game->bmp.p_arrow.draw(306, 147);
-		else if(game->settings.fullscreennative)
-			game->bmp.p_arrow.draw(222, 171);
-		else if (game->settings.borderless)
-			game->bmp.p_arrow.draw(300, 196);
-		else game->bmp.p_arrow.draw(295, 221);
-		/* FPS */
-		if (!game->settings.fps)
-			game->bmp.p_arrow.draw(500, 147);
-		else if (game->settings.fps == 1)
-			game->bmp.p_arrow.draw(555, 168);
-		else if (game->settings.fps == 2)
-			game->bmp.p_arrow.draw(555, 193);
-		/* Music Volume */
-		switch (game->settings.music_volume) {
-			case 0: {
-				game->bmp.slidemarker.draw(205, 382);
-				break;
-			}
-			case 1: {
-				game->bmp.slidemarker.draw(232, 382);
-				break;
-			}
-			case 2: {
-				game->bmp.slidemarker.draw(258, 382);
-				break;
-			}
-			case 3: {
-				game->bmp.slidemarker.draw(285, 382);
-				break;
-			}
-			case 4: {
-				game->bmp.slidemarker.draw(312, 382);
-				break;
-			}
-			case 5: {
-				game->bmp.slidemarker.draw(339, 382);
-				break;
-			}
-			default: break;
-		}
-
-		/* Effects Volume */
-		switch (game->settings.effects_volume) {
-		case 0: {
-			game->bmp.slidemarker.draw(205, 454);
-			break;
-		}
-		case 1: {
-			game->bmp.slidemarker.draw(232, 454);
-			break;
-		}
-		case 2: {
-			game->bmp.slidemarker.draw(258, 454);
-			break;
-		}
-		case 3: {
-			game->bmp.slidemarker.draw(285, 454);
-			break;
-		}
-		case 4: {
-			game->bmp.slidemarker.draw(312, 454);
-			break;
-		}
-		case 5: {
-			game->bmp.slidemarker.draw(339, 454);
-			break;
-		}
-		default: break;
-		}
-
-		break;
-	}
-	default: break;
-
-	}
-
-	game->xpm.cursor.draw(game->SDLevent.motion.x + 5, game->SDLevent.motion.y + 7, false);
-
-	display_frame();
-}
-
-
-
 void event_handler(game_data* game) {
 
 	double lastTick = SDL_GetTicks();
@@ -229,6 +100,7 @@ void event_handler(game_data* game) {
 	clock_t previousRTC;
 	previousRTC = clock();
 	
+	/* Exit program when state is complete */
 	while (game->state != COMP) {
 
 		double currentTick = SDL_GetTicks();
@@ -244,7 +116,6 @@ void event_handler(game_data* game) {
 				case SDL_MOUSEBUTTONDOWN: {
 					game->event = MOUSE;
 					game_state_machine(game);
-
 					break;
 				}
 				case SDL_KEYDOWN: {
@@ -259,39 +130,34 @@ void event_handler(game_data* game) {
 
 						default: game->s_event = IDLING;
 					}
-
 					game->event = KEYBOARD;
 					game_state_machine(game);
-
-
 					break;
 				}
 				case SDL_KEYUP: {
 					game->s_event = IDLING;
 					break;
 				}
-
 			}
-
 		}
 
 		/* Timer event, 60 times a second */
 		if (currentTick - lastTick >= 17) {
-
 			increment_timers(&game->timers);
 			game->event = TIMER;
 			game_state_machine(game);
 			lastTick = currentTick;
 		}
 
+		/* Count frames drawn every second */
 		if ((clock() - previousRTC) / (double)CLOCKS_PER_SEC >= 1) {
 			game->timers.frames_per_second = ++game->timers.framecounter;
 			game->timers.framecounter = 0;
 			previousRTC = clock();
 		}
+		/* Draw frames whenever possible if fps is in unlocked mode */
 		if (!game->settings.fps && game->state == PLAYING)
 			handle_frame(game);
-
 	}
 }
 
@@ -299,8 +165,10 @@ void game_state_machine(game_data* game) {
 
 	switch (game->state) {
 
+		/* MAIN MENU */
 		case MENU: {
 			static bool first_frame = false;
+			/* Operations when entering menu: start music, initiate menu asteroids, etc */
 			if (!first_frame) {
 				game->threads.push(play_music, std::ref(*game->sound.galaxia));
 				first_frame = true;
@@ -336,6 +204,7 @@ void game_state_machine(game_data* game) {
 			}
 			break;
 		}
+		/* OPTIONS MENU */
 		case OPTIONSMENU: {
 			static bool gfxchange = false;
 
@@ -454,24 +323,25 @@ void game_state_machine(game_data* game) {
 					}
 					/* Cancel Button */
 					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 38 && game->SDLevent.motion.x <= 185) {
-						read_video_settings(&game->settings);
+						read_game_settings(&game->settings);
 						game->state = MENU;
 					}
 					/* Apply Button */
 					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 846 && game->SDLevent.motion.x <= 995) {
 						change_volume(&game->sound, game->settings.effects_volume, game->settings.music_volume);
 						reset_sdl(&game->settings);
-						save_video_settings(&game->settings);
+						save_game_settings(&game->settings);
 						game->state = MENU;
 					}
 					/* Reset Button */
 					if (game->SDLevent.motion.y >= 690 && game->SDLevent.motion.y <= 740 && game->SDLevent.motion.x >= 235 && game->SDLevent.motion.x <= 718) 
-						reset_video_settings(&game->settings);
+						reset_game_settings(&game->settings);
 				}
 			}
 			break;
 		}
 		
+		/* COUNTDOWN TO SINGLE PLAYER GAME */
 		case START_SEQUENCE: {
 			if (game->event == TIMER) {
 
@@ -501,7 +371,7 @@ void game_state_machine(game_data* game) {
 			}
 			break;
 		}
-
+		/* CURRENTLY PLAYING */
 		case PLAYING: {
 			static int round_delay = 0;
 			playing_event_handler(game);
@@ -517,6 +387,7 @@ void game_state_machine(game_data* game) {
 			}
 			break;
 		}
+		/* NEW ROUND EVERY TIME ALL ENEMIES DIE */
 		case NEW_ROUND: {
 
 			if (game->player1.round < MAX_ASTEROIDS)
@@ -537,6 +408,7 @@ void game_state_machine(game_data* game) {
 
 			break;
 		}
+		/* WHEN PLAYER HP DROPS BELOW 1*/
 		case LOSS: {
 			game->threads.push(stop_music);
 			static bool highscore;
@@ -576,7 +448,7 @@ void game_state_machine(game_data* game) {
 			}
 			break;
 		}
-
+		/* PAUSE STATE*/
 		case GAMEPAUSED: {
 			game->timers.start_seq = 3;
 			if (game->event == KEYBOARD) {
