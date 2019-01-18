@@ -197,8 +197,8 @@ void draw_alien(game_data *game) {
 
 		//Draw alien lasers
 		for (int i = 0; i < AMMO; i++) {
-			if (game->alien.lasers[i].active) {
-				mpoint2d ws_laser = vector_translate_gfx(&game->alien.lasers[i].position, 1024, 768);
+			if (game->alien.lasers[i].active()) {
+				mpoint2d ws_laser = vector_translate_gfx(&game->alien.lasers[i].getposition(), 1024, 768);
 				game->xpm.red_laser.draw((int)ws_laser.x, (int)ws_laser.y);
 			}
 		}
@@ -261,8 +261,8 @@ void render_frame(game_data *game) {
 
 	//Draw lasers
 	for (int i = 0; i < AMMO; i++) {
-		if (game->player1.lasers[i].active) {
-			mpoint2d ws_laser = vector_translate_gfx(&game->player1.lasers[i].position, 1024, 768);
+		if (game->player1.lasers[i].active()) {
+			mpoint2d ws_laser = vector_translate_gfx(&game->player1.lasers[i].getposition(), 1024, 768);
 			game->xpm.blue_laser.draw((int)ws_laser.x, (int)ws_laser.y);
 		}
 	}

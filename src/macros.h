@@ -31,7 +31,7 @@
 #define ALIEN_SPAWN_CHANCE_INCREASE 20
 #define ALIEN_ROTATION_SPEED 2
 
-#define DELAY_BETWEEN_ROUNDS 60
+#define DELAY_BETWEEN_ROUNDS 40
 
 //Asteroids
 #define MAX_ASTEROIDS 20 //Maximum number of asteroids on screen at any time

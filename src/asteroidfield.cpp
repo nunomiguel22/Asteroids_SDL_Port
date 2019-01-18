@@ -75,7 +75,6 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			asteroid_field[i].death_timer--;
 	}
 
-	player1->end_round = true;
 	bool fragment = false;
 	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
 		if (asteroid_field[i].active) {
@@ -83,13 +82,13 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			/* Player laser to asteroid Collision */
 			for (unsigned int j = 0; j < AMMO; j++) {
 
-				if (player1->lasers[j].active) {
-
-					mvector2d v_ast_laser(player1->lasers[j].position, asteroid_field[i].position);
+				if (player1->lasers[j].active()) {
+					mpoint2d laserpos = player1->lasers[j].getposition();
+					mvector2d v_ast_laser(laserpos, asteroid_field[i].position);
 					if (v_ast_laser.magnitude() <= asteroid_field[i].hit_radius) {
 						collision = true;
 						asteroid_field[i].active = false;
-						player1->lasers[j].active = false;
+						player1->lasers[j].setstatus(false);
 						asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
 						if (asteroid_field[i].size == LARGE) {
 							player1->score += 50;
@@ -122,26 +121,20 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 				}
 				asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
 			}
-
-			/* End round when all asteroids are destroyed */
-			if (asteroid_field[i].active || asteroid_field[i].death_timer > 0 || fragment)
-				player1->end_round = false;
 		}
-		/* Do not end round if the alien ship is still alive */
-		if (alien->active)
-			player1->end_round = false;
-
 	}
 	return collision;
 
 }
 
-void ast_update(asteroid asteroid_field[]) {
+bool ast_update(asteroid asteroid_field[]) {
+
+	bool liveasteroids = false;
 
 	/* Updates asteroid position and warps asteroids to the other edge of the screen */
 	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
 		if (asteroid_field[i].active) {
-
+			liveasteroids = true;
 			asteroid_field[i].position.x += asteroid_field[i].velocity.getX();
 			asteroid_field[i].position.y += asteroid_field[i].velocity.getY();
 
@@ -159,7 +152,10 @@ void ast_update(asteroid asteroid_field[]) {
 				asteroid_field[i].degrees -= 360;
 			else asteroid_field[i].degrees++;
 		}
+		if (asteroid_field[i].death_timer > 0)
+			liveasteroids = true;
 	}
+	return liveasteroids;
 }
 
 void ast_fragment(asteroid asteroid_field[], int ast_index) {

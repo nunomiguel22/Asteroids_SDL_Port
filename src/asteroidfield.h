@@ -47,7 +47,7 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien);
 *
 * @param asteroid_field Array of asteroids
 */
-void ast_update(asteroid asteroid_field[]);
+bool ast_update(asteroid asteroid_field[]);
 /**
 * @brief Fragments large asteroids into two smaller asteroids with random movement
 *

@@ -2,6 +2,7 @@
 
 #include "macros.h"
 #include "mvector.h"
+#include "weapon.h"
 
 /** @defgroup Ship Ship
 * @{
@@ -11,11 +12,14 @@
 /* Data structures */
 
 /** @brief Weapon struct for ship's lasers */
-typedef struct {
-	mpoint2d position; 			/**< @brief Laser x/y position */
-	mvector2d force;				/**< @brief Vector with force applied to the laser's position */
-	bool active;				/**< @brief Laser status */
-}weapon;
+//typedef struct {
+//	mpoint2d position; 			/**< @brief Laser x/y position */
+//	mvector2d force;				/**< @brief Vector with force applied to the laser's position */
+//	bool active;				/**< @brief Laser status */
+//}weapon;
+
+
+
 
 /** @brief Player struct */
 typedef struct {

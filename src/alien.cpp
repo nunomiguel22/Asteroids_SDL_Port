@@ -2,6 +2,8 @@
 
 
 #include "alien.h"
+#include "weapon.h"
+#include "mvector.h"
 
 /* ALIEN SHIP */
 
@@ -37,7 +39,7 @@ void alien_spawn(player *p) {
 	p->active = true;
 
 	for (int i = 0; i < AMMO; i++) {
-		p->lasers[i].active = false;
+		p->lasers[i].setstatus(false);
 	}
 }
 
@@ -72,13 +74,10 @@ void alien_update(player *alien, player *player1, game_timers *timers) {
 
 	/* Destroys out of bounds lasers */
 	for (unsigned int i = 0; i < AMMO; i++) {
-		if (alien->lasers[i].active)
-			alien->lasers[i].position.x += alien->lasers[i].force.getX();
-		alien->lasers[i].position.y += alien->lasers[i].force.getY();
-		if (alien->lasers[i].position.x >= math_h_positive_bound || alien->lasers[i].position.x <= math_h_negative_bound)
-			alien->lasers[i].active = false;
-		if (alien->lasers[i].position.y >= math_v_positive_bound || alien->lasers[i].position.y <= math_v_negative_bound)
-			alien->lasers[i].active = false;
+		if (alien->lasers[i].active()) {
+			alien->lasers[i].updateposition();
+			alien->lasers[i].checkbounds();
+		}
 	}
 }
 
@@ -86,12 +85,13 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 
 	/* Player laser to alien ship collision */
 	for (unsigned int j = 0; j < AMMO; j++) {
-		if (player1->lasers[j].active) {
-			mvector2d v_ast_laser(player1->lasers[j].position, alien->pivot);
+		if (player1->lasers[j].active()) {
+			mpoint2d laserpos = player1->lasers[j].getposition();
+			mvector2d v_ast_laser(laserpos, alien->pivot);
 
 			if (v_ast_laser.magnitude() <= alien->hit_radius) {
 				alien->hp -= PLAYER_LASER_DAMAGE;
-				player1->lasers[j].active = false;
+				player1->lasers[j].setstatus(false);
 				if (alien->hp <= 0) {
 					timers->alien_death_timer = (unsigned int)(ALIEN_DEATH_DURATION * 60);
 					alien->active = false;
@@ -103,12 +103,13 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 
 	/* Alien laser to player ship collision */
 	for (unsigned int j = 0; j < AMMO; j++) {
-		if (alien->lasers[j].active) {
-			mvector2d v_ast_laser(alien->lasers[j].position, player1->pivot);
+		if (alien->lasers[j].active()) {
+			mpoint2d laserpos = alien->lasers[j].getposition();
+			mvector2d v_ast_laser(laserpos, player1->pivot);
 
 			if (v_ast_laser.magnitude() <= player1->hit_radius) {
 				player1->hp -= 20;
-				alien->lasers[j].active = false;
+				alien->lasers[j].setstatus(false);
 			}
 		}
 	}

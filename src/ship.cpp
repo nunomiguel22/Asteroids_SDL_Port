@@ -4,7 +4,7 @@
 #include "graphics.h"
 
 
-/* GENERAL SHIP */
+
 
 void ship_spawn(player *p) {
 
@@ -36,7 +36,7 @@ void ship_spawn(player *p) {
 	p->jump_ready = false;
 
 	for (int i = 0; i < AMMO; i++) {
-		p->lasers[i].active = false;
+		p->lasers[i].setstatus(false);
 	}
 }
 
@@ -151,14 +151,14 @@ void ship_fire_laser(player *p, unsigned int *timer) {
 
 	/* Activates an inactive laser from the laser struct, and gives it the same direction as the cannon versor */
 	for (unsigned int i = 0; i < AMMO; i++)
-		if (!p->lasers[i].active) {
+		if (!p->lasers[i].active()) {
 			mvector2d vcannon(p->pivot, p->cannon);
 			mvector2d cannon_versor = vcannon.versor();
 
 			cannon_versor *= LASER_VELOCITY;
-			p->lasers[i].active = true;
-			p->lasers[i].position = p->cannon;
-			p->lasers[i].force = cannon_versor;
+			p->lasers[i].setstatus(true);
+			p->lasers[i].setposition (p->cannon);
+			p->lasers[i].setforce (cannon_versor);
 			p->weapon_ready = false;
 			*timer = 0;
 			break;
@@ -193,13 +193,11 @@ void ship_update(player *p) {
 
 	/* Destroys out of bounds active lasers */
 	for (unsigned int i = 0; i < AMMO; i++) {
-		if (p->lasers[i].active)
-			p->lasers[i].position.x += p->lasers[i].force.getX();
-		p->lasers[i].position.y += p->lasers[i].force.getY();
-		if (p->lasers[i].position.x >= math_h_positive_bound || p->lasers[i].position.x <= math_h_negative_bound)
-			p->lasers[i].active = false;
-		if (p->lasers[i].position.y >= math_v_positive_bound || p->lasers[i].position.y <= math_v_negative_bound)
-			p->lasers[i].active = false;
+		if (p->lasers[i].active()) {
+
+			p->lasers[i].updateposition();
+			p->lasers[i].checkbounds();
+		}
 	}
 }
 

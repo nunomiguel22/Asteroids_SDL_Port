@@ -85,4 +85,8 @@ void game_state_machine(game_data* game);
 */
 void playing_event_handler(game_data* game);
 
+void options_button_check(game_data* game);
+
+void new_round_reset(game_data* game);
+
 
