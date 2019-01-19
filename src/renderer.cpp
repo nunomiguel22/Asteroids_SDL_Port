@@ -5,7 +5,7 @@
 #include <string>
 #include <queue>
 
-#define CON_FONT_SIZE 0.125
+#define CON_FONT_SIZE 0.1
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer;
@@ -365,11 +365,11 @@ void render_console(game_data * game) {
 	game->bmp.gameconsole.draw(0, 0);
 	game->console.draw_column(game->timers.timerTick);
 	draw_string(5, 350, game->console.get_command(), C_WHITE, CON_FONT_SIZE, &game->bmp);
-	std::queue <std::string> tempmessages = game->console.getconsole_messages();
+	std::queue <consolemessage> tempmessages = game->console.getconsole_messages();
 	int messagessize = tempmessages.size();
 
 	for (int i = 0; i < messagessize; ++i) {
-		draw_string(15, 15 + (i * 25), tempmessages.front(), C_WHITE, CON_FONT_SIZE, &game->bmp);
+		draw_string(15, 15 + (i * 20), tempmessages.front().message, tempmessages.front().messagecolor, CON_FONT_SIZE, &game->bmp);
 		tempmessages.pop();
 	}
 
@@ -407,7 +407,6 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 		
 		if (game->console.visible())
 			render_console(game);
-		//game->bmp.def_font[36].draw_transform2(100, 100, C_WHITE, CON_FONT_SIZE);
 		break;
 	}
 	case OPTIONSMENU: {

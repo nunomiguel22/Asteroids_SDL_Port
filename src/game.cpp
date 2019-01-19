@@ -93,10 +93,12 @@ void game_state_machine(game_data* game) {
 			}
 
 			if (game->event == KEYBOARD) {
+				/* Toggle console */
 				if (game->SDLevent.key.keysym.sym == SDLK_BACKSLASH)
 					game->console.setvisibility(game->console.visible() ^ 1);
+				/* Console input */
 				if (game->console.visible())
-					if (game->console.console_input_handler(game->SDLevent) == 1)
+					if (game->console.console_input_handler(game->SDLevent) == "quit")
 						game->state = COMP;
 			}
 

@@ -39,7 +39,7 @@ public:
 	int load(const char* filepath);
 	void draw(int x, int y);
 	void draw_transform(int gx, int gy, double rotation_degrees, double scale);
-	void draw_transform2(int gx, int gy, uint32_t color, double scale);
+	void draw_transform2(int gx, int gy, uint32_t newcolor, double scale);
 	void verticalflip();
 };
 

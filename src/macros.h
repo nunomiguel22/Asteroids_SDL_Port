@@ -58,6 +58,8 @@
 
 #define C_WHITE 0xFFFFFF
 #define C_BLACK 0x000000
+#define C_ERROR 0xFF4444
+#define C_NORMAL 0x99CCFF
 
 /** @brief Ship events */
 typedef enum { MAIN_THRUSTER, PORT_THRUSTER, STARBOARD_THRUSTER, REVERSE_THRUSTER, K_ESC, QUIT, IDLING } ship_event;

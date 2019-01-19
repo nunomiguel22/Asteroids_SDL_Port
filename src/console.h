@@ -3,21 +3,28 @@
 #include <SDL.h>
 #include <queue>
 
+
+typedef struct {
+	std::string message;
+	uint32_t messagecolor;
+
+}consolemessage;
+
 class console {
 	bool vis;
 	unsigned int columnposition;
 	std::string user_command;
-	std::queue <std::string> console_messages;
+	std::queue <consolemessage> console_messages;
 
 
 public:
-	console() { columnposition = 5; console_messages.push("Asteroids by Nuno Marques"); console_messages.push("Console version 0.3");
-	}
+	console();
+
 
 	bool visible();
 	std::string get_command() { return user_command; }
 	int getcolumnposition() { return columnposition; }
-	std::queue<std::string> getconsole_messages() { return console_messages; }
+	std::queue<consolemessage> getconsole_messages() { return console_messages; }
 
 	void setvisibility(bool visibility);
 
@@ -26,9 +33,9 @@ public:
 	void dec_colpos();
 	void reset_colpos();
 
-	int console_input_handler(SDL_Event &evnt);
+	std::string console_input_handler(SDL_Event &evnt);
 
-	void write_message(std::string message);
+	void write_message(std::string message, uint32_t color);
 	
 };
 

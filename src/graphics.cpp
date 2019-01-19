@@ -184,7 +184,7 @@ void Bitmap::draw_transform(int gx, int gy, double rotation_degrees, double scal
 		}
 }
 
-void Bitmap::draw_transform2(int x, int y, uint32_t color, double scale) {
+void Bitmap::draw_transform2(int x, int y, uint32_t newcolor, double scale) {
 	
 	/*
 		Swaps a color in the bitmap and draws to pixelbuffer
@@ -201,8 +201,8 @@ void Bitmap::draw_transform2(int x, int y, uint32_t color, double scale) {
 			uint32_t color = (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 2)] << 16);
 			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 1)] << 8);
 			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3)]);
-			if (color && color != COLOR_IGNORED && i < infoheader.height - 1)
-				if (draw_pixel(x + (int)(j * scale), y + (int)((infoheader.height - i - 1) * scale), color))
+			if (color && color == C_WHITE && i < infoheader.height - 1)
+				if (draw_pixel(x + (int)(j * scale), y + (int)((infoheader.height - i - 1) * scale), newcolor))
 					continue;
 		}
 
