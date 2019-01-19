@@ -10,6 +10,7 @@
 #include "asteroidfield.h"
 #include "sound.h"
 #include "utils.h"
+#include "console.h"
 
 typedef enum { KEYBOARD, MOUSE, TIMER} event_type;
 
@@ -21,6 +22,7 @@ typedef struct {
 	ctpl::thread_pool threads;						/**< @brief Processor threads */
 	game_sts state;									/**< @brief Current game state */
 	game_timers timers;								/**< @brief Struct with the game's timers */
+	console console;
 	player player1;									/**< @brief Player1, this is always the ship controlled by this computer */
 	player alien;
 	asteroid menu_asteroid_field[MAX_ASTEROIDS];

@@ -22,6 +22,7 @@ int game_data_init(game_data *game) {
 	game->timers.cyclecounter = 0;
 	game->alien.active = false;
 
+	game->console.setvisibility(false);
 	/* Load pixmaps into memory*/
 	load_xpms(&game->xpm);
 

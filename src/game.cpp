@@ -92,9 +92,19 @@ void game_state_machine(game_data* game) {
 				game->timers.timerTick = 0;
 			}
 
-			if (game->event == MOUSE) 
+			if (game->event == KEYBOARD) {
+				if (game->SDLevent.key.keysym.sym == SDLK_BACKSLASH)
+					game->console.setvisibility(game->console.visible() ^ 1);
+				if (game->console.visible())
+					if (game->console.console_input_handler(game->SDLevent) == 1)
+						game->state = COMP;
+			}
+
+			if (game->event == MOUSE)
 				//Check menu selection
-				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && game->timers.timerTick >= 30	&& game->SDLevent.motion.x >= 380 && game->SDLevent.motion.x <= 570) {
+
+				if (game->SDLevent.button.button == SDL_BUTTON_LEFT && !game->console.visible()	&& game->SDLevent.motion.x >= 380 && game->SDLevent.motion.x <= 570
+					&& game->timers.timerTick >= 30) {
 					if (game->SDLevent.motion.y >= 207 && game->SDLevent.motion.y <= 268) {
 						game->threads.push(stop_music);
 						game->state = START_SEQUENCE;

@@ -11,6 +11,10 @@ using namespace std;
 BitmapInfoHeader Bitmap::getBitmapInfoHeader() const { return infoheader; }
 uint8_t* Bitmap::getBitmapData() { return bitmapdata; }
 
+void Bitmap::setbitmapdata(uint8_t *bmpdata) { bitmapdata = bmpdata; }
+void Bitmap::setwidth(int width) { infoheader.width = width; }
+void Bitmap::setheight(int height) { infoheader.height = height; }
+
 int Bitmap::load(const char* filepath) {
 	
 	//allocating size
@@ -105,7 +109,7 @@ void Bitmap::draw(int x, int y) {
 	if (bitmapdata == NULL)
 		return;
 
-	if (x + infoheader.width < 0 || x > 1023 || y + infoheader.height < 0 || y > 767)
+	if (x < 0 || x + infoheader.width > hres  || y < 0 || y + infoheader.height > vres)
 		return;
 
 	for (int i = infoheader.height; i != 0; --i)
@@ -140,7 +144,7 @@ void Bitmap::draw_transform(int gx, int gy, double rotation_degrees, double scal
 
 	/* Check if out of bounds */
 
-	if (gx + width < 0 || gx > hres - 1 || gy + height < 0 || gy > vres - 1)
+	if (gx < 0 || gx + width > hres || gy  < 0 || gy + height> vres)
 		return;
 
 	/* Create extra drawing space for rotation*/
@@ -180,7 +184,7 @@ void Bitmap::draw_transform(int gx, int gy, double rotation_degrees, double scal
 		}
 }
 
-void Bitmap::draw_colorswap(int x, int y, uint32_t originalcolor, uint32_t newcolor) {
+void Bitmap::draw_transform2(int x, int y, uint32_t color, double scale) {
 	
 	/*
 		Swaps a color in the bitmap and draws to pixelbuffer
@@ -189,7 +193,7 @@ void Bitmap::draw_colorswap(int x, int y, uint32_t originalcolor, uint32_t newco
 	if (bitmapdata == NULL)
 		return;
 
-	if (x + infoheader.width < 0 || x > 1023 || y + infoheader.height < 0 || y > 767)
+	if (x < 0 || x + infoheader.width > hres || y < 0 || y + infoheader.height > vres)
 		return;
 
 	for (int i = infoheader.height; i != 0; --i)
@@ -198,9 +202,7 @@ void Bitmap::draw_colorswap(int x, int y, uint32_t originalcolor, uint32_t newco
 			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 1)] << 8);
 			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3)]);
 			if (color && color != COLOR_IGNORED && i < infoheader.height - 1)
-				if (color == originalcolor)
-					color = newcolor;
-				if (draw_pixel(x + j, y + infoheader.height - i - 1, color))
+				if (draw_pixel(x + (int)(j * scale), y + (int)((infoheader.height - i - 1) * scale), color))
 					continue;
 		}
 
@@ -268,8 +270,23 @@ int Pixmap::read(const char *pixmap[]) {
 	}
 	return 0;
 }
-
 void Pixmap::draw(int gx, int gy) {
+
+	/* Phasing out pixmaps, rotation no longer needed*/
+
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+
+			uint32_t color = map[(i * width) + j];
+			if (color && color != COLOR_IGNORED) {
+				if (draw_pixel(gx + j, gy + i, color))
+					continue;
+			}
+		}
+}
+
+
+void Pixmap::draw(int gx, int gy, double scale) {
 
 	/* Phasing out pixmaps, rotation no longer needed*/
 
@@ -278,7 +295,7 @@ void Pixmap::draw(int gx, int gy) {
 			
 			uint32_t color = map[(i * width) + j];
 			if (color && color != COLOR_IGNORED) {
-				if (draw_pixel(gx + j, gy + i, color))
+				if (draw_pixel(gx + (int)(j * scale), gy + (int)(i * scale), color))
 					continue;
 			}
 		}
@@ -376,8 +393,126 @@ int load_bitmaps(bitmap_data *bmp) {
 	while (bmp->p_arrow.load("Assets/textures/parrow.bmp"))
 		bmp->p_arrow.load("Assets/textures/parrow.bmp");
 
+	while (bmp->gameconsole.load("Assets/textures/console.bmp"))
+		bmp->gameconsole.load("Assets/textures/console.bmp");
+
 	while (bmp->slidemarker.load("Assets/textures/slidemarker.bmp"))
 		bmp->slidemarker.load("Assets/textures/slidemarker.bmp");
+
+	while (bmp->def_font[0].load("Assets/textures/fA.bmp"))
+		bmp->def_font[0].load("Assets/textures/fA.bmp");
+
+	while (bmp->def_font[1].load("Assets/textures/fB.bmp"))
+		bmp->def_font[1].load("Assets/textures/fB.bmp");
+
+	while (bmp->def_font[2].load("Assets/textures/fC.bmp"))
+		bmp->def_font[2].load("Assets/textures/fC.bmp");
+
+	while (bmp->def_font[3].load("Assets/textures/fD.bmp"))
+		bmp->def_font[3].load("Assets/textures/fD.bmp");
+
+	while (bmp->def_font[4].load("Assets/textures/fE.bmp"))
+		bmp->def_font[4].load("Assets/textures/fE.bmp");
+
+	while (bmp->def_font[5].load("Assets/textures/fF.bmp"))
+		bmp->def_font[5].load("Assets/textures/fF.bmp");
+
+	while (bmp->def_font[6].load("Assets/textures/fG.bmp"))
+		bmp->def_font[6].load("Assets/textures/fG.bmp");
+
+	while (bmp->def_font[7].load("Assets/textures/fH.bmp"))
+		bmp->def_font[7].load("Assets/textures/fH.bmp");
+
+	while (bmp->def_font[8].load("Assets/textures/fI.bmp"))
+		bmp->def_font[8].load("Assets/textures/fI.bmp");
+
+	while (bmp->def_font[9].load("Assets/textures/fJ.bmp"))
+		bmp->def_font[9].load("Assets/textures/fJ.bmp");
+
+	while (bmp->def_font[10].load("Assets/textures/fK.bmp"))
+		bmp->def_font[10].load("Assets/textures/fK.bmp");
+
+	while (bmp->def_font[11].load("Assets/textures/fL.bmp"))
+		bmp->def_font[11].load("Assets/textures/fL.bmp");
+
+	while (bmp->def_font[12].load("Assets/textures/fM.bmp"))
+		bmp->def_font[12].load("Assets/textures/fM.bmp");
+
+	while (bmp->def_font[13].load("Assets/textures/fN.bmp"))
+		bmp->def_font[13].load("Assets/textures/fN.bmp");
+
+	while (bmp->def_font[14].load("Assets/textures/fO.bmp"))
+		bmp->def_font[14].load("Assets/textures/fO.bmp");
+
+	while (bmp->def_font[15].load("Assets/textures/fP.bmp"))
+		bmp->def_font[15].load("Assets/textures/fP.bmp");
+
+	while (bmp->def_font[16].load("Assets/textures/fQ.bmp"))
+		bmp->def_font[16].load("Assets/textures/fQ.bmp");
+
+	while (bmp->def_font[17].load("Assets/textures/fR.bmp"))
+		bmp->def_font[17].load("Assets/textures/fR.bmp");
+
+	while (bmp->def_font[18].load("Assets/textures/fS.bmp"))
+		bmp->def_font[18].load("Assets/textures/fS.bmp");
+
+	while (bmp->def_font[19].load("Assets/textures/fT.bmp"))
+		bmp->def_font[19].load("Assets/textures/fT.bmp");
+
+	while (bmp->def_font[20].load("Assets/textures/fU.bmp"))
+		bmp->def_font[20].load("Assets/textures/fU.bmp");
+
+	while (bmp->def_font[21].load("Assets/textures/fV.bmp"))
+		bmp->def_font[21].load("Assets/textures/fV.bmp");
+
+	while (bmp->def_font[22].load("Assets/textures/fW.bmp"))
+		bmp->def_font[22].load("Assets/textures/fW.bmp");
+
+	while (bmp->def_font[23].load("Assets/textures/fX.bmp"))
+		bmp->def_font[23].load("Assets/textures/fX.bmp");
+
+	while (bmp->def_font[24].load("Assets/textures/fY.bmp"))
+		bmp->def_font[24].load("Assets/textures/fY.bmp");
+
+	while (bmp->def_font[25].load("Assets/textures/fZ.bmp"))
+		bmp->def_font[25].load("Assets/textures/fZ.bmp");
+
+	while (bmp->def_font[26].load("Assets/textures/f0.bmp"))
+		bmp->def_font[26].load("Assets/textures/f0.bmp");
+
+	while (bmp->def_font[27].load("Assets/textures/f1.bmp"))
+		bmp->def_font[27].load("Assets/textures/f1.bmp");
+
+	while (bmp->def_font[28].load("Assets/textures/f2.bmp"))
+		bmp->def_font[28].load("Assets/textures/f2.bmp");
+
+	while (bmp->def_font[29].load("Assets/textures/f3.bmp"))
+		bmp->def_font[29].load("Assets/textures/f3.bmp");
+
+	while (bmp->def_font[30].load("Assets/textures/f4.bmp"))
+		bmp->def_font[30].load("Assets/textures/f4.bmp");
+
+	while (bmp->def_font[31].load("Assets/textures/f5.bmp"))
+		bmp->def_font[31].load("Assets/textures/f5.bmp");
+
+	while (bmp->def_font[32].load("Assets/textures/f6.bmp"))
+		bmp->def_font[32].load("Assets/textures/f6.bmp");
+
+	while (bmp->def_font[33].load("Assets/textures/f7.bmp"))
+		bmp->def_font[33].load("Assets/textures/f7.bmp");
+
+	while (bmp->def_font[34].load("Assets/textures/f8.bmp"))
+		bmp->def_font[34].load("Assets/textures/f8.bmp");
+
+	while (bmp->def_font[35].load("Assets/textures/f9.bmp"))
+		bmp->def_font[35].load("Assets/textures/f9.bmp");
+
+	while (bmp->def_font[36].load("Assets/textures/fdot.bmp"))
+		bmp->def_font[36].load("Assets/textures/fdot.bmp");
+	
+
+
+
 	return 0;
 }
 

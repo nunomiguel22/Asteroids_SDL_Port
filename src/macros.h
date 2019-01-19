@@ -54,6 +54,11 @@
 #define math_v_negative_bound -383
 #define math_v_positive_bound 384
 
+//Colors
+
+#define C_WHITE 0xFFFFFF
+#define C_BLACK 0x000000
+
 /** @brief Ship events */
 typedef enum { MAIN_THRUSTER, PORT_THRUSTER, STARBOARD_THRUSTER, REVERSE_THRUSTER, K_ESC, QUIT, IDLING } ship_event;
 

@@ -2,8 +2,10 @@
 
 #include "renderer.h"
 #include "macros.h"
+#include <string>
+#include <queue>
 
-
+#define CON_FONT_SIZE 0.125
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer;
@@ -86,9 +88,8 @@ int draw_pixel(int x, int y, uint32_t color) {
 
 	uint8_t *v_address = pixelbuffer;
 
-	if (x > hres - 1 || y > vres - 1 || x < 0 || y < 0) {
+	if (x > hres - 1 || y > vres - 1 || x < 0 || y < 0) 
 		return 1;
-	}
 
 	v_address += ((hres * y) + x) * pixel_bytes;
 
@@ -119,6 +120,42 @@ void show_splash(game_data *game) {
 	game->xpm.cursor.draw(hres / 2, vres / 2);
 	display_frame();
 }
+
+void draw_char(unsigned int x, unsigned int y, char character, uint32_t color, double scale, bitmap_data *bmp) {
+	
+	int val = -1;
+	
+	if (character >= 'a' && character <= 'z')
+		val = character - 'a';
+	else  if (character >= 'A' && character <= 'Z') {
+		val = character - 'A';
+		scale *= 1.25;
+		y -= (int) (scale * 15);
+		x -= (int) (scale * 15);
+	}
+	else if (character >= '0' && character <= '9')
+		val = character - '0' + 26;
+	else if (character == '.') {
+		val = 36;
+		x += 3;
+	}
+
+
+	
+	if (val != -1)
+		bmp->def_font[val].draw_transform2(x, y, color, scale);
+
+}
+
+void draw_string(unsigned int x, unsigned int y, std::string line, uint32_t color, double scale, bitmap_data *bmp) {
+	
+	if (line.empty())
+		return;
+
+	for (unsigned int i = 0; i < line.size(); ++i)
+		draw_char(x + (int)(i * 100 * scale), y, line.at(i), color, scale, bmp);
+}
+
 
 void draw_digit(unsigned int num, int x, int y, game_data *game)
 {
@@ -324,6 +361,20 @@ void render_frame(game_data *game) {
 	draw_alien(game);
 }
 
+void render_console(game_data * game) {
+	game->bmp.gameconsole.draw(0, 0);
+	game->console.draw_column(game->timers.timerTick);
+	draw_string(5, 350, game->console.get_command(), C_WHITE, CON_FONT_SIZE, &game->bmp);
+	std::queue <std::string> tempmessages = game->console.getconsole_messages();
+	int messagessize = tempmessages.size();
+
+	for (int i = 0; i < messagessize; ++i) {
+		draw_string(15, 15 + (i * 25), tempmessages.front(), C_WHITE, CON_FONT_SIZE, &game->bmp);
+		tempmessages.pop();
+	}
+
+}
+
 void handle_frame(game_data *game) {
 
 	render_frame(game);
@@ -353,6 +404,10 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 		game->bmp.quitbutton.draw(380, 400);
 		for (int i = 0; i < 5; i++)
 			draw_number(game->highscores[i], 900, 60 + i * 40, game);
+		
+		if (game->console.visible())
+			render_console(game);
+		//game->bmp.def_font[36].draw_transform2(100, 100, C_WHITE, CON_FONT_SIZE);
 		break;
 	}
 	case OPTIONSMENU: {

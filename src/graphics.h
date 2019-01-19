@@ -31,10 +31,15 @@ public:
 	Bitmap() {};
 	BitmapInfoHeader getBitmapInfoHeader() const;
 	uint8_t* getBitmapData();
+
+	void setbitmapdata(uint8_t *bmpdata);
+	void setwidth(int width);
+	void setheight(int height);
+
 	int load(const char* filepath);
 	void draw(int x, int y);
 	void draw_transform(int gx, int gy, double rotation_degrees, double scale);
-	void draw_colorswap(int gx, int gy, uint32_t originalcolor, uint32_t newcolor);
+	void draw_transform2(int gx, int gy, uint32_t color, double scale);
 	void verticalflip();
 };
 
@@ -49,6 +54,7 @@ public:
 	uint32_t* getMap();
 	int read(const char *map[]);
 	void draw(int gx, int gy);
+	void draw(int gx, int gy, double scale);
 };
 
 //GAME DATA
@@ -82,6 +88,7 @@ typedef struct {
 typedef struct {
 	Bitmap menubackground;
 	Bitmap hsbackground;
+	Bitmap gameconsole;
 	Bitmap playbutton;
 	Bitmap optionsbutton;
 	Bitmap quitbutton;
@@ -110,8 +117,10 @@ typedef struct {
 	Bitmap pix_ship_blue_pt;
 	Bitmap p_arrow;
 	Bitmap slidemarker;
+	Bitmap def_font[37];
 }bitmap_data;
 
 
 int load_bitmaps(bitmap_data *bmp);
 void load_xpms(pixmap_data *pix);
+
