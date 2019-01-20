@@ -101,13 +101,9 @@ void game_state_machine(game_data* game) {
 					cmd = game->console.console_input_handler(game->SDLevent);
 					if (!cmd.empty())
 						exec_console_cmd(cmd, game);
-					
-					if (cmd == "send")
-						game->connection.send_packet("hello");
+						
 					if (cmd == "receive") {
-						std::string value;
-						value = game->connection.listen_packet();
-						game->console.write_message(value, C_NORMAL);
+
 						
 
 

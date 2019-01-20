@@ -259,11 +259,20 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 	std::map <std::string, console_commands> *cmd_map = game->console.get_command_map();
 
 	switch ((*cmd_map)[command]) {
-	case con_not_defined: { return; }
+	case con_not_defined: { game->console.write_message("No such command", C_ERROR); return; }
 		
 		/* Network commands */
 		case con_init_server: {
-			game->connection.init_local(DEFAULT_MASTER_PORT, &game->console);
+			std::string portstr;
+			getline(str, portstr);
+			if (portstr.empty())
+				game->console.write_message("Please enter a valid port (0-65535)", C_ERROR);
+
+			uint16_t port;
+			try { port = std::stoi(portstr); }
+			catch (const std::invalid_argument&) { game->console.write_message("Please enter a valid port (0-65535)", C_ERROR); return; }
+			
+			game->connection.init_local(port, &game->console);
 			break;
 		}
 		case con_init_client: {
@@ -273,7 +282,7 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 		case con_connect: {
 			if (!game->connection.initialized()) {
 				game->console.write_message("Initiate network first ", C_ERROR);
-				game->console.write_message("Use init_server portnumber or init_client ", C_NORMAL);
+				game->console.write_message("Use init_server portnumber or init_client", C_NORMAL);
 				return;
 			}
 
@@ -281,7 +290,10 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 			std::string portstr;
 			getline(str, ip, ':');
 			getline(str, portstr);
-			uint16_t port = std::stoi(portstr);
+			uint16_t port;
+			try { port = std::stoi(portstr); } 
+			catch (const std::invalid_argument&) { game->console.write_message("Invalid address format", C_ERROR); return; }
+
 			if (ip.empty() || portstr.empty()) {
 				game->console.write_message("Invalid address format", C_ERROR);
 				return;
@@ -289,6 +301,43 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 			game->connection.connect(ip, port);
 			break;
 		}
+		case con_send_testpacket: {
+			std::string message;
+			getline(str, message);
+			if (message.empty()) {
+				game->console.write_message("Select a message for the test packet", C_ERROR);
+				game->console.write_message("Use send_testpacket message", C_NORMAL);
+				return;
+			}
+
+			if (game->connection.connected() && game->connection.initialized()) {
+				game->connection.send_packet(message);
+			}
+			else {
+				game->console.write_message("Initiate network and connect to a remote peer first", C_ERROR);
+				game->console.write_message("Use init_server portnumber or init_client", C_NORMAL);
+				game->console.write_message("Use connect IP:PORT to establish a connection", C_NORMAL);
+			}
+
+			break;
+		}
+
+		case con_receive_testpacket: {
+			if (game->connection.connected() && game->connection.initialized()) {
+				std::string value;
+				value = game->connection.listen_packet();
+				game->console.write_message(value, C_NORMAL);
+			}
+			else {
+				game->console.write_message("Initiate network and connect to a remote peer first", C_ERROR);
+				game->console.write_message("Use init_server portnumber or init_client", C_NORMAL);
+				game->console.write_message("Use connect IP:PORT to establish a connection", C_NORMAL);
+			}
+
+			break;
+		}
+
+
 
 		/* General commands */
 		case con_quit: {

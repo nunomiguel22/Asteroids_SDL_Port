@@ -14,6 +14,7 @@ typedef struct {
 class UDPnet {
 	bool exit;
 	bool started;
+	bool conn;
 	UDPsocket local_socket;
 	IPaddress remote_ip;
 	UDPpacket *incoming_packet;
@@ -24,6 +25,7 @@ public:
 	~UDPnet();
 	bool quit();
 	bool initialized();
+	bool connected();
 	bool open_port(uint16_t local_port);
 	bool init_local(uint16_t local_port, console *con);
 	bool connect(const std::string ip, uint16_t port);

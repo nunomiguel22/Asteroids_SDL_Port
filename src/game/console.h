@@ -4,7 +4,8 @@
 #include <queue>
 #include <map>
 
-typedef enum {	con_not_defined, con_init_server, con_init_client, con_connect, con_quit, con_clear } console_commands;
+typedef enum {	con_not_defined, con_init_server, con_init_client, con_connect, con_quit, con_clear, con_send_testpacket,
+con_receive_testpacket} console_commands;
 
 typedef struct {
 	std::string message;

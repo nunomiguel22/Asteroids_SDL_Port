@@ -48,6 +48,8 @@ uint8_t * init_sdl(game_settings *settings) {
 	if (TTF_Init() < 0)
 		return NULL;
 
+
+
 	return pixelbuffer;
 }
 

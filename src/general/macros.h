@@ -3,8 +3,7 @@
 /* GAME MACROS */
 
 //Technical
-#define DEFAULT_MASTER_PORT 1337
-#define DEFAULT_CLIENT_PORT 1338
+#define DEFAULT_CLIENT_PORT 1337
 #define PHYSICS_TICKS 1 //1 - 60 ticks/s(recommended), 2 - 30 ticks/s, 3 - 20 tick/s, 4- 15 ticks/s, 5 12 ticks/s
 
 //Ship

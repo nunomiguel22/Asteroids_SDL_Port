@@ -6,12 +6,13 @@
 
 
 
-UDPnet::UDPnet() { exit = false; started = false; }
+UDPnet::UDPnet() { exit = false; started = false; conn = false; }
 
 UDPnet::~UDPnet() { SDLNet_UDP_Close(local_socket); SDLNet_Quit(); }
 
 bool UDPnet::quit() { return exit; }
 bool UDPnet::initialized() { return started; }
+bool UDPnet::connected() { return conn; }
 
 bool UDPnet::open_port(uint16_t local_port) {
 	local_socket = SDLNet_UDP_Open(local_port);
@@ -36,6 +37,7 @@ bool UDPnet::init_local(uint16_t local_port, console *con) {
 	else cons->write_message("Port open, waiting for connection", C_NORMAL);	
 
 	started = true;
+	return true;
 }
 
 
@@ -50,6 +52,8 @@ bool UDPnet::connect(const std::string ip, uint16_t port) {
 	}
 	else cons->write_message("Resolved address: " + str.str(), C_NORMAL);
 	
+	conn = true;
+
 	return true;
 }
 
@@ -74,14 +78,17 @@ bool UDPnet::send_packet(std::string msg) {
 }
 
 std::string UDPnet::listen_packet() {
-	std::string msg = "NULL";
+	char *msg = (char *) malloc (512);
 	incoming_packet = SDLNet_AllocPacket(512);
 
-	if (SDLNet_UDP_Recv(local_socket, incoming_packet)) {
-		memcpy(&msg, incoming_packet->data, incoming_packet->len);
-	}
+	if (SDLNet_UDP_Recv(local_socket, incoming_packet)) 
+		strncpy_s(msg, 512, (char *)incoming_packet->data, incoming_packet->len);
+	else strncpy_s(msg, 512 ,"NULL", 4);
+	
+	std::string fin (msg);
 
+	free(msg);
 	SDLNet_FreePacket(incoming_packet);
 
-	return msg;
+	return fin;
 }

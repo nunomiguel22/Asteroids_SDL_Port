@@ -13,10 +13,10 @@ console::console() {
 	command_map["init_server"] = con_init_server;
 	command_map["init_client"] = con_init_client;
 	command_map["connect"] = con_connect;
+	command_map["send_testpacket"] = con_send_testpacket;
+	command_map["receive_testpacket"] = con_receive_testpacket;
 
 
-
-	
 	consolemessage intro;
 	intro.message = "Asteroids version 1.7 by Nuno Marques";
 	intro.messagecolor = C_NORMAL;
@@ -102,6 +102,29 @@ std::string console::console_input_handler(SDL_Event &evnt) {
 			}
 			return "";
 		}
+		case SDLK_MINUS:{
+			if (SDL_GetModState() & KMOD_LSHIFT) {
+				user_command += '_';
+				inc_colpos();
+			}
+			else {
+				user_command += '-';
+				inc_colpos();
+			}
+			return "";
+		}
+		case SDLK_COMMA: {
+			if (SDL_GetModState() & KMOD_LSHIFT) {
+				user_command += ';';
+				inc_colpos();
+			}
+			else {
+				user_command += ',';
+				inc_colpos();
+			}
+			return "";
+		}
+
 
 		default:break;
 	}
@@ -116,8 +139,14 @@ std::string console::console_input_handler(SDL_Event &evnt) {
 
 	/* Character input */
 	if ((evnt.key.keysym.sym >= 97 && evnt.key.keysym.sym <= 122 && user_command.size() < 30)) {
-		user_command += evnt.key.keysym.sym;
-		inc_colpos();
+		if (SDL_GetModState() & KMOD_LSHIFT) {
+			user_command += evnt.key.keysym.sym - 32;
+			inc_colpos();
+		}
+		else {
+			user_command += evnt.key.keysym.sym;
+			inc_colpos();
+		}
 	}
 
 	else if (evnt.key.keysym.sym >= 48 && evnt.key.keysym.sym <= 57 && user_command.size() < 30) {
