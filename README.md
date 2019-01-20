@@ -7,7 +7,7 @@ Port/continuation of LCOM's project "Asteroids" for minix, based on the original
 * This game uses various free to use assets
 
 ## Game Demo:
-![Screenshot](demo/newmenu.jpg)
+![Screenshot](demo/newconsole.jpg)
 ![Screenshot](demo/optionsmenu.jpg)
 Game demo
 ![Screenshot](demo/newdemo.gif)
