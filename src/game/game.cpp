@@ -51,12 +51,18 @@ void event_handler(game_data* game) {
 					game->s_event = IDLING;
 					break;
 				}
+				case SDL_TEXTINPUT: {
+					game->event = KEYBOARD;
+					game_state_machine(game);
+					break;
+				}
+			
 			}
 		}
 
 		/* Timer event, 60 times a second */
 		if (currentTick - lastTick >= 17) {
-			increment_timers(&game->timers);
+			increment_timers(&game->timers, game->asteroid_field);
 			game->event = TIMER;
 			game_state_machine(game);
 			lastTick = currentTick;
@@ -83,7 +89,8 @@ void game_state_machine(game_data* game) {
 			static bool first_frame = false;
 			/* Operations when entering menu: start music, initiate menu asteroids, etc */
 			if (!first_frame) {
-				game->threads.push(play_music, std::ref(*game->sound.galaxia));
+				if (game->settings.music_volume)
+					game->threads.push(play_music, std::ref(*game->sound.galaxia));
 				first_frame = true;
 				game->alien.round = 7;
 				ast_spawn(game->menu_asteroid_field, &game->alien);
@@ -93,21 +100,14 @@ void game_state_machine(game_data* game) {
 
 			if (game->event == KEYBOARD) {
 				/* Toggle console */
-				if (game->SDLevent.key.keysym.sym == SDLK_BACKSLASH)
-					game->console.setvisibility(game->console.visible() ^ 1);
+				if (game->SDLevent.key.keysym.sym == SDLK_BACKSLASH || game->SDLevent.key.keysym.sym == SDLK_BACKQUOTE)
+					game->console.toggle();
 				/* Console input */
 				if (game->console.visible()) {
 					std::string cmd;
 					cmd = game->console.console_input_handler(game->SDLevent);
 					if (!cmd.empty())
 						exec_console_cmd(cmd, game);
-						
-					if (cmd == "receive") {
-
-						
-
-
-					}
 				}
 			}
 
@@ -158,7 +158,8 @@ void game_state_machine(game_data* game) {
 
 				/* First second of sequence iniate player ship, reset alien ship*/
 				if (game->timers.start_seq == 3) {
-					game->threads.push(play_music, std::ref(*game->sound.kawaii));
+					if (game->settings.music_volume)
+						game->threads.push(play_music, std::ref(*game->sound.kawaii));
 					game->timers.timerTick = 0;
 					ship_spawn(&game->player1);
 					if (game->alien.active)
@@ -167,6 +168,7 @@ void game_state_machine(game_data* game) {
 
 				/* Last second of sequence initiate game timers, start game*/
 				if (game->timers.start_seq == 0 && (game->timers.timerTick % 60 == 0)) {
+					game->threads.push(play_sound, std::ref(*game->sound.cdownb));
 					game->s_event = IDLING;
 					start_timers(&game->timers);
 					game->state = NEW_ROUND;
@@ -175,6 +177,7 @@ void game_state_machine(game_data* game) {
 
 				/* Update screen 60 times a second */
 				if (game->timers.timerTick % 60 == 0) {
+					game->threads.push(play_sound, std::ref(*game->sound.cdowna));
 					render_seq_frame(game);
 					display_frame();
 					game->timers.start_seq--;
@@ -275,7 +278,9 @@ void playing_event_handler(game_data* game) {
 				game->state = GAMEPAUSED;
 			}
 			/* Apply force to ship */
-			else ship_apply_force(&game->s_event, &game->player1);
+			else if (ship_apply_force(&game->s_event, &game->player1))
+				game->threads.push(play_sound, std::ref(*game->sound.thrust));
+			
 			break;
 		}
 
@@ -290,9 +295,12 @@ void playing_event_handler(game_data* game) {
 				game->threads.push(play_sound, std::ref(*game->sound.laser));
 			}
 
-			/* Teleport */
-			if (game->SDLevent.button.button == SDL_BUTTON_RIGHT && game->player1.jump_ready)
-				ship_teleport(&game->player1, &game->timers.teleport_timer);
+			/* Engage teleport */
+			if (game->SDLevent.button.button == SDL_BUTTON_RIGHT && game->player1.jump_ready) {
+				game->threads.push(play_sound, std::ref(*game->sound.teleport));
+				game->player1.teleporting = true;
+				game->player1.teleport_time = game->timers.timerTick + 20;
+			}
 
 			break;
 		}

@@ -26,3 +26,6 @@ void weapon::updateposition() {
 	position.x += force.getX();
 	position.y += force.getY();
 }
+
+float  weapon::get_travel_angle() { return travel_angle; }
+void  weapon::set_travel_angle(float angle) { travel_angle = angle; }

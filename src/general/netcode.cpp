@@ -4,11 +4,14 @@
 #include "macros.h"
 #include <sstream>
 
-
+//TODO Rework, no need to alloc and free every operation
 
 UDPnet::UDPnet() { exit = false; started = false; conn = false; }
 
-UDPnet::~UDPnet() { SDLNet_UDP_Close(local_socket); SDLNet_Quit(); }
+UDPnet::~UDPnet() { 
+	if (started)
+		SDLNet_UDP_Close(local_socket); 
+}
 
 bool UDPnet::quit() { return exit; }
 bool UDPnet::initialized() { return started; }
@@ -16,7 +19,7 @@ bool UDPnet::connected() { return conn; }
 
 bool UDPnet::open_port(uint16_t local_port) {
 	local_socket = SDLNet_UDP_Open(local_port);
-	if (local_socket != NULL)
+	if (local_socket == nullptr)
 		return false;
 	return true;
 }
@@ -24,17 +27,11 @@ bool UDPnet::open_port(uint16_t local_port) {
 bool UDPnet::init_local(uint16_t local_port, console *con) {
 	cons = con;
 	
-	if (SDLNet_Init()) {
-		cons->write_message("Cannot start network system", C_ERROR);
+	if (!open_port(local_port)) {
+		cons->write("Cannot open port", C_ERROR);
 		return false;
 	}
-	else cons->write_message("Network initialized sucessfully", C_NORMAL);
-	
-	if (open_port(local_port)) {
-		cons->write_message("Cannot open port", C_ERROR);
-		return false;
-	}
-	else cons->write_message("Port open, waiting for connection", C_NORMAL);	
+	else cons->write("Port open, waiting for connection", C_NORMAL);	
 
 	started = true;
 	return true;
@@ -46,11 +43,16 @@ bool UDPnet::connect(const std::string ip, uint16_t port) {
 	std::stringstream str;
 	str <<  ip << ":" << port;
 
+	IPaddress cbind;
+	cbind.port = port;
+	SDLNet_ResolveHost(&cbind, NULL, port);
+	SDLNet_UDP_Bind(local_socket, 0, &cbind);
+
 	if (SDLNet_ResolveHost(&remote_ip, ip.c_str(), port)) {
-		cons->write_message("Failed to resolve address: " + str.str(), C_ERROR);
+		cons->write("Failed to resolve address: " + str.str(), C_ERROR);
 		return false;
 	}
-	else cons->write_message("Resolved address: " + str.str(), C_NORMAL);
+	else cons->write("Resolved address: " + str.str(), C_NORMAL);
 	
 	conn = true;
 
@@ -63,11 +65,12 @@ bool UDPnet::send_packet(std::string msg) {
 	outgoing_packet->address.host = remote_ip.host;
 	outgoing_packet->address.port = remote_ip.port;
 
+
 	memcpy(outgoing_packet->data, &msg, msg.size());
 	outgoing_packet->len = msg.size();
 
 	if (!SDLNet_UDP_Send(local_socket, -1, outgoing_packet)) {
-		cons->write_message("Packet lost", C_ERROR);
+		cons->write("Packet lost", C_ERROR);
 		return false;
 	}
 

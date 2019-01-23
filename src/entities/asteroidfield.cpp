@@ -6,8 +6,10 @@
 void ast_spawn(asteroid asteroid_field[], player *player1) {
 
 	/* Resets all asteroid death timers */
-	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++)
+	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
 		asteroid_field[i].death_timer = 0;
+		asteroid_field[i].death_frame = 0;	
+	}
 
 	/* Initiates a number of asteroids based on round with random movement*/
 	for (int i = 0; i < player1->round; i++) {
@@ -69,13 +71,8 @@ void ast_spawn(asteroid asteroid_field[], player *player1) {
 int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 
 	bool collision = false;
-
-	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
-		if (!asteroid_field[i].active && asteroid_field[i].death_timer > 0)
-			asteroid_field[i].death_timer--;
-	}
-
 	bool fragment = false;
+
 	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
 		if (asteroid_field[i].active) {
 
@@ -86,10 +83,11 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 					mpoint2d laserpos = player1->lasers[j].getposition();
 					mvector2d v_ast_laser(laserpos, asteroid_field[i].position);
 					if (v_ast_laser.magnitude() <= asteroid_field[i].hit_radius) {
+						player1->hit_reg = true;
 						collision = true;
 						asteroid_field[i].active = false;
 						player1->lasers[j].setstatus(false);
-						asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
+						asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION);
 						if (asteroid_field[i].size == LARGE) {
 							player1->score += 50;
 							ast_fragment(asteroid_field, i);
@@ -119,7 +117,7 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 						player1->score += 100;
 					}
 				}
-				asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION * 60);
+				asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION);
 			}
 		}
 	}
@@ -168,7 +166,7 @@ void ast_fragment(asteroid asteroid_field[], int ast_index) {
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
 
 		if (!asteroid_field[i].active && asteroid_field[i].death_timer == 0) {
-			frag_counter++;
+			++frag_counter;
 			asteroid_field[i].size = MEDIUM;
 
 			asteroid_field[i].position.x = x;

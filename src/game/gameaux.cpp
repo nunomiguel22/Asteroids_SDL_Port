@@ -1,19 +1,46 @@
+#include <sstream>
+
 #include "game.h"
 #include "renderer.h"
 #include "alien.h"
 
-#include <sstream>
 
 int game_data_init(game_data *game) {
 
 	/* Set number of threads*/
 	game->threads.resize(8);
 
-	/* Load sound files */
-	load_sounds(&game->sound, game->settings.music_volume, game->settings.effects_volume);
+	/* Load sound files */ //GAME CRASHING WHEN EFFECTS ON BUT MUSIC OFF : S
+	if (load_sounds(&game->sound, game->settings.effects_volume, game->settings.music_volume, &game->console))
+		return 1;
 
 	/* Load font */
-	game->lucida_console_med = TTF_OpenFont("Assets/Lucida_Console.ttf", CON_FONT_SIZE);
+	std::string font_path;
+	game->console.write_to_log("LOADING FONT FILES");
+
+	font_path = FILE_FONTS_PATH"Lucida_Console.ttf";
+	if (game->ttf_fonts.lucida_console_med.load(font_path, CON_FONT_SIZE)) {
+		game->console.write_to_log("Couldn't load \"" + font_path + "\", error: " + SDL_GetError());
+		return 1;
+	}
+	else game->console.write_to_log("Loaded \"" + font_path + "\"");
+
+	font_path = FILE_FONTS_PATH"copperplategothicbold.ttf";
+	if (game->ttf_fonts.copperplategothicbold.load(font_path, LARGE_FONT_SIZE)) {
+		game->console.write_to_log("Couldn't load \"" + font_path + "\", error: " + SDL_GetError());
+		return 1;
+	}
+	else game->console.write_to_log("Loaded \"" + font_path + "\"");
+
+	font_path = FILE_FONTS_PATH"copperplategothicbold.ttf";
+	if (game->ttf_fonts.copperplategothicbold_massive.load(font_path, MASSIVE_FONT_SIZE)) {
+		game->console.write_to_log("Couldn't load \"" + font_path + "\", error: " + SDL_GetError());
+		return 1;
+	}
+	else game->console.write_to_log("Loaded \"" + font_path + "\"");
+
+	game->console.write_to_log("LOADED FONT FILES");
+	game->console.write_to_log(" ");
 
 	/* Load highscores */
 	if (!load_highscores(game->highscores))
@@ -26,14 +53,25 @@ int game_data_init(game_data *game) {
 	game->state = MENU;
 	game->timers.cyclecounter = 0;
 	game->alien.active = false;
+	/* Resets all asteroid death timers */
+	for (unsigned int i = 0; i < MAX_ASTEROIDS; i++) {
+		game->asteroid_field[i].death_timer = 0;
+		game->asteroid_field[i].death_frame = 0;
+	}
 
 	game->console.setvisibility(false);
-	/* Load pixmaps into memory*/
-	load_xpms(&game->xpm);
 
 	/* Load bitmaps into memory*/
-	if (load_bitmaps(&game->bmp))
+	if (load_bitmaps(&game->bmp, &game->console))
 		return 1;
+
+	game->console.write_to_log("Game initialized successfully");
+	game->console.write_to_log(" ");
+	game->console.write_to_log(" ");
+	game->console.write_to_log(" ");
+	game->console.write_to_log(" ");
+
+	game->console.write_welcome_message();
 
 	return 0;
 }
@@ -42,13 +80,19 @@ void physics_update(int id, game_data &game) {
 
 	bool allenemiesdefeated = true;
 
+	if ( game.player1.teleport_time > 0 && game.timers.timerTick >= game.player1.teleport_time ) {
+		ship_teleport(&game.player1, &game.timers.teleport_timer);
+		game.player1.teleport_time = 0;
+		game.player1.teleporting = false;
+	}
+
 	/* Asteroid update and collision */
 	if (ast_update(game.asteroid_field))
 		allenemiesdefeated = false;
 	if (ast_collision(game.asteroid_field, &game.player1, &game.alien)) {
 		game.threads.push(play_sound, std::ref(*game.sound.pop));
 		allenemiesdefeated = false;
-	}
+	}	
 
 	/* Player ship update */
 	ship_update(&game.player1);
@@ -56,12 +100,17 @@ void physics_update(int id, game_data &game) {
 	/* Alien ship update and collision */
 	if (game.alien.active) {
 		allenemiesdefeated = false;
-		alien_update(&game.alien, &game.player1, &game.timers);
+		if (alien_update(&game.alien, &game.player1, &game.timers))
+			game.threads.push(play_sound, std::ref(*game.sound.alien_laser));
 		alien_collision(&game.alien, &game.player1, &game.timers);
 		if (!game.alien.active)
-			game.threads.push(play_sound, std::ref(*game.sound.pop));
+			game.threads.push(play_sound, std::ref(*game.sound.ship_expl));
 	}
 
+	if (game.player1.hit_reg) {
+		game.timers.hitreg_timer = 30;
+		game.player1.hit_reg = false;
+	}
 	if (allenemiesdefeated)
 		game.player1.end_round = true;
 
@@ -87,18 +136,28 @@ void start_timers(game_timers *timers) {
 	timers->teleport_timer = 0;
 	timers->round_timer = 0;
 	timers->alien_death_timer = 0;
+	timers->hitreg_timer = 0;
 }
 
-void increment_timers(game_timers *timers) {
+void increment_timers(game_timers *timers, asteroid asteroid_field[]) {
 
-	timers->timerTick++;
-	timers->player1_weapon_timer++;
-	timers->player2_weapon_timer++;
-	timers->alien_weapon_timer++;
-	timers->teleport_timer++;
-	timers->round_timer++;
+	for (unsigned int i = 0; i < MAX_ASTEROIDS; ++i) 
+		if (!asteroid_field[i].active && asteroid_field[i].death_timer > 0) {
+			--asteroid_field[i].death_timer;
+			if (asteroid_field[i].death_timer % 2 == 0)
+				++asteroid_field[i].death_frame;
+		}
+
+	++timers->timerTick;
+	++timers->player1_weapon_timer;
+	++timers->player2_weapon_timer;
+	++timers->alien_weapon_timer;
+	++timers->teleport_timer;
+	++timers->round_timer;
+	if (timers->hitreg_timer > 0)
+		--timers->hitreg_timer;
 	if (timers->alien_death_timer > 0)
-		timers->alien_death_timer--;
+		--timers->alien_death_timer;
 }
 
 void new_round_reset(game_data* game) {
@@ -112,8 +171,10 @@ void new_round_reset(game_data* game) {
 
 	ast_spawn(game->asteroid_field, &game->player1);
 	int random_alien_spawn = rand() % (100 - 1) + 1;
-	if (random_alien_spawn > (100 - ((game->player1.round - STARTING_ASTEROIDS) * ALIEN_SPAWN_CHANCE_INCREASE)))
+	if (random_alien_spawn > (100 - ((game->player1.round - STARTING_ASTEROIDS) * ALIEN_SPAWN_CHANCE_INCREASE))) {
+		game->threads.push(play_sound, std::ref(*game->sound.alien_spawn));
 		alien_spawn(&game->alien);
+	}
 
 	game->timers.round_timer = 0;
 	game->player1.invulnerability = true;
@@ -202,9 +263,10 @@ void options_button_check(game_data* game) {
 			game->settings.music_volume = 4;
 		else if (game->SDLevent.motion.x >= 340 && game->SDLevent.motion.x <= 349)
 			game->settings.music_volume = 5;
+
 	}
 
-	/* Music volume options*/
+	/* Effects volume options*/
 	if (game->SDLevent.motion.y >= 458 && game->SDLevent.motion.y <= 478) {
 		if (game->SDLevent.motion.x >= 208 && game->SDLevent.motion.x <= 217)
 			game->settings.effects_volume = 0;
@@ -249,7 +311,7 @@ void options_button_check(game_data* game) {
 
 void exec_console_cmd(std::string cmd, game_data* game) {
 
-	game->console.write_message("> " + cmd, C_WHITE);
+	game->console.write("> " + cmd, C_WHITE);
 
 	std::stringstream str;
 	str << cmd;
@@ -259,18 +321,18 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 	std::map <std::string, console_commands> *cmd_map = game->console.get_command_map();
 
 	switch ((*cmd_map)[command]) {
-	case con_not_defined: { game->console.write_message("No such command", C_ERROR); return; }
+	case con_not_defined: { game->console.write("No such command", C_ERROR); return; }
 		
 		/* Network commands */
 		case con_init_server: {
 			std::string portstr;
 			getline(str, portstr);
 			if (portstr.empty())
-				game->console.write_message("Please enter a valid port (0-65535)", C_ERROR);
+				game->console.write("Please enter a valid port (0-65535)", C_ERROR);
 
 			uint16_t port;
 			try { port = std::stoi(portstr); }
-			catch (const std::invalid_argument&) { game->console.write_message("Please enter a valid port (0-65535)", C_ERROR); return; }
+			catch (const std::invalid_argument&) { game->console.write("Please enter a valid port (0-65535)", C_ERROR); return; }
 			
 			game->connection.init_local(port, &game->console);
 			break;
@@ -281,8 +343,8 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 		}
 		case con_connect: {
 			if (!game->connection.initialized()) {
-				game->console.write_message("Initiate network first ", C_ERROR);
-				game->console.write_message("Use init_server portnumber or init_client", C_NORMAL);
+				game->console.write("Initiate network first ", C_ERROR);
+				game->console.write("Use init_server portnumber or init_client", C_NORMAL);
 				return;
 			}
 
@@ -292,31 +354,33 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 			getline(str, portstr);
 			uint16_t port;
 			try { port = std::stoi(portstr); } 
-			catch (const std::invalid_argument&) { game->console.write_message("Invalid address format", C_ERROR); return; }
+			catch (const std::invalid_argument&) { game->console.write("Invalid address format", C_ERROR); return; }
 
 			if (ip.empty() || portstr.empty()) {
-				game->console.write_message("Invalid address format", C_ERROR);
+				game->console.write("Invalid address format", C_ERROR);
 				return;
 			}
 			game->connection.connect(ip, port);
 			break;
 		}
+
 		case con_send_testpacket: {
 			std::string message;
 			getline(str, message);
 			if (message.empty()) {
-				game->console.write_message("Select a message for the test packet", C_ERROR);
-				game->console.write_message("Use send_testpacket message", C_NORMAL);
+				game->console.write("Select a message for the test packet", C_ERROR);
+				game->console.write("Use send_testpacket message", C_NORMAL);
 				return;
 			}
 
 			if (game->connection.connected() && game->connection.initialized()) {
 				game->connection.send_packet(message);
+				game->console.write("Packet sent", C_SUCCESS);
 			}
 			else {
-				game->console.write_message("Initiate network and connect to a remote peer first", C_ERROR);
-				game->console.write_message("Use init_server portnumber or init_client", C_NORMAL);
-				game->console.write_message("Use connect IP:PORT to establish a connection", C_NORMAL);
+				game->console.write("Initiate network and connect to a remote peer first", C_ERROR);
+				game->console.write("Use init_server portnumber or init_client", C_NORMAL);
+				game->console.write("Use connect IP:PORT to establish a connection", C_NORMAL);
 			}
 
 			break;
@@ -326,12 +390,14 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 			if (game->connection.connected() && game->connection.initialized()) {
 				std::string value;
 				value = game->connection.listen_packet();
-				game->console.write_message(value, C_NORMAL);
+				if (value == "NULL")
+					game->console.write(value, C_NORMAL);
+				else game->console.write("Received package with message: \"" + value + "\"", C_SUCCESS);
 			}
 			else {
-				game->console.write_message("Initiate network and connect to a remote peer first", C_ERROR);
-				game->console.write_message("Use init_server portnumber or init_client", C_NORMAL);
-				game->console.write_message("Use connect IP:PORT to establish a connection", C_NORMAL);
+				game->console.write("Initiate network and connect to a remote peer first", C_ERROR);
+				game->console.write("Use init_server portnumber or init_client", C_NORMAL);
+				game->console.write("Use connect IP:PORT to establish a connection", C_NORMAL);
 			}
 
 			break;
@@ -350,6 +416,13 @@ void exec_console_cmd(std::string cmd, game_data* game) {
 		}
 		default: return;
 	}
+}
 
+void kill_sequence(game_data* game) {
+
+	game->console.save_log_to_file();
+	free_bitmaps(&game->bmp);
+	free_sounds(&game->sound);
+	exit_sdl(game);
 
 }

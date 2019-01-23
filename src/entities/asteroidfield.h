@@ -21,8 +21,10 @@ typedef struct {
 	bool active;				/**< @brief Asteroid status */
 	double hit_radius;			/**< @brief Asteroid hit radius for collisions */
 	unsigned int death_timer;	/**< @brief Asteroid death timer for death animation */
+	int death_frame;
 	int degrees;				/**< @brief Asteroid rotation, for graphical purposes only */
 	asteroid_size size;			/**< @brief Asteroid size */
+
 }asteroid;
 
 /* Functions */

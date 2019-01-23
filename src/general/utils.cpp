@@ -86,6 +86,8 @@ int load_highscores(unsigned int highscores[]) {
 	for (int i = 0; i < 5; i++)
 		fscanf(fptr, "%d", &highscores[i]);
 
+	fclose(fptr);
+
 	return 1;
 }
 

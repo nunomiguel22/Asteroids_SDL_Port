@@ -37,8 +37,11 @@ typedef struct {
 	weapon lasers[AMMO];		/**< @brief Laser array */
 	bool weapon_ready;			/**< @brief True when ship is ready to fire */
 	bool jump_ready;			/**< @brief True when ship is ready to teleport */
+	bool teleporting;
+	unsigned int teleport_time;
 	bool end_round;				/**< @brief True when current round is over */
 	bool invulnerability;		/**< @brief True when ship is invulnerable */
+	bool hit_reg;
 	bool active;				/**< @brief Ship's status, used for alien ship */
 }player;
 
@@ -70,7 +73,7 @@ void ship_teleport(player *p, unsigned int *timer);
 * @param p Ship player struct
 * @param keyboard_event Keyboard input
 */
-void ship_apply_force(ship_event *s_event, player *p);
+bool ship_apply_force(ship_event *s_event, player *p);
 /**
 * @brief Updates the ship's laser struct to fire a laser in the cannon's direction
 *

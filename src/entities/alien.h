@@ -14,7 +14,7 @@ void alien_spawn(player *p);
 *
 * @param game General game struct
 */
-void alien_update(player *alien, player *player1, game_timers *timers);
+bool alien_update(player *alien, player *player1, game_timers *timers);
 /**
 * @brief Checks for all alien ship related collisions
 *

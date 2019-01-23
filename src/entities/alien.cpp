@@ -26,7 +26,7 @@ void alien_spawn(player *p) {
 	p->pivot.y = rand() % math_v_positive_bound;
 
 	p->cannon.x = p->pivot.x;
-	p->cannon.y = p->pivot.y + 20;
+	p->cannon.y = p->pivot.y + 40;
 
 	p->port.setX(-1);
 	p->port.setY(0);
@@ -43,7 +43,9 @@ void alien_spawn(player *p) {
 	}
 }
 
-void alien_update(player *alien, player *player1, game_timers *timers) {
+bool alien_update(player *alien, player *player1, game_timers *timers) {
+	
+	bool alien_fired = false;
 
 	/* Updates alien ships position */
 	alien->cannon.x += alien->force.getX();
@@ -64,13 +66,15 @@ void alien_update(player *alien, player *player1, game_timers *timers) {
 			vcannon.rotate(-ALIEN_ROTATION_SPEED);
 		else vcannon.rotate(+ALIEN_ROTATION_SPEED);
 	}
-	vcannon.limit(20);
+	vcannon.limit(40);
 	alien->cannon.x = alien->pivot.x + vcannon.getX();
 	alien->cannon.y = alien->pivot.y + vcannon.getY();
 
 	/* Fires lasers when available */
-	if (timers->alien_weapon_timer >= (60 / ALIEN_FIRE_RATE))
+	if (timers->alien_weapon_timer >= (60 / ALIEN_FIRE_RATE)) {
 		ship_fire_laser(alien, &timers->alien_weapon_timer);
+		alien_fired = true;
+	}
 
 	/* Destroys out of bounds lasers */
 	for (unsigned int i = 0; i < AMMO; i++) {
@@ -79,6 +83,7 @@ void alien_update(player *alien, player *player1, game_timers *timers) {
 			alien->lasers[i].checkbounds();
 		}
 	}
+	return alien_fired;
 }
 
 void alien_collision(player *alien, player *player1, game_timers *timers) {
@@ -90,6 +95,7 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 			mvector2d v_ast_laser(laserpos, alien->pivot);
 
 			if (v_ast_laser.magnitude() <= alien->hit_radius) {
+				player1->hit_reg = true;
 				alien->hp -= PLAYER_LASER_DAMAGE;
 				player1->lasers[j].setstatus(false);
 				if (alien->hp <= 0) {

@@ -34,6 +34,8 @@ void ship_spawn(player *p) {
 	p->round = STARTING_ASTEROIDS;
 	p->invulnerability = false;
 	p->jump_ready = false;
+	p->hit_reg = false;
+	p->teleporting = false;
 
 	for (int i = 0; i < AMMO; i++) {
 		p->lasers[i].setstatus(false);
@@ -110,7 +112,8 @@ void ship_teleport(player *p, unsigned int *timer) {
 
 }
 
-void ship_apply_force(ship_event *s_event, player *p) {
+bool ship_apply_force(ship_event *s_event, player *p) {
+	bool ship_move = false;
 
 	/* Creates necessary versors */
 	mvector2d vcannon (p->pivot, p->cannon);
@@ -121,16 +124,19 @@ void ship_apply_force(ship_event *s_event, player *p) {
 	/* Applies force based on keyboard input and accelaration values in "macros.h" */
 	switch (*s_event) {
 		case MAIN_THRUSTER: {
+			ship_move = true;
 			cannon_versor *= MAIN_THRUSTER_ACCELARATION;
 			p->force += cannon_versor;
 			break;
 		}
 		case PORT_THRUSTER: {
+			ship_move = true;
 			port_th *= PORT_THRUSTER_ACCELARATION;
 			p->force += port_th;
 			break;
 		}
 		case STARBOARD_THRUSTER: {
+			ship_move = true;
 			starboard_th *= STARBOARD_THRUSTER_ACCELARATION;
 			p->force += starboard_th;
 			break;
@@ -145,6 +151,7 @@ void ship_apply_force(ship_event *s_event, player *p) {
 
 	/* Limits the force vector, and effectively the ship's velocity, to the maximum velocity value in "macros.h" */
 	p->force.limit(THRUSTERS_MAXIMUM_VELOCITY);
+	return ship_move;
 }
 
 void ship_fire_laser(player *p, unsigned int *timer) {
@@ -159,6 +166,7 @@ void ship_fire_laser(player *p, unsigned int *timer) {
 			p->lasers[i].setstatus(true);
 			p->lasers[i].setposition (p->cannon);
 			p->lasers[i].setforce (cannon_versor);
+			p->lasers[i].set_travel_angle((float)(vcannon.angle() - 90));
 			p->weapon_ready = false;
 			*timer = 0;
 			break;

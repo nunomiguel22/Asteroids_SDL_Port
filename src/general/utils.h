@@ -2,7 +2,6 @@
 
 #include "ship.h"
 
-
 typedef struct {
 	uint32_t hresolution;
 	uint32_t vresolution;
@@ -42,3 +41,4 @@ void save_highscores(unsigned int highscores[]);
 * @return Returns 1 if the score is a highscore, 0 otherwise
 */
 int verify_highscores(unsigned int highscores[], player *player1);
+

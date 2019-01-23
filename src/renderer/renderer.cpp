@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <sstream>
 
 #include "renderer.h"
 #include "macros.h"
@@ -9,16 +10,19 @@
 SDL_Window *window = NULL;
 SDL_Renderer *renderer;
 SDL_Texture *screen;
-uint8_t *pixelbuffer;
+uint32_t *pixelbuffer;
 
 const int pixel_bytes = 4;
 const int vram_size = hres * vres * pixel_bytes;
 
+uint32_t * init_sdl(game_settings *settings, console *cons) {
 
-uint8_t * init_sdl(game_settings *settings) {
-
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+		std::string error = SDL_GetError();
+		cons->write_to_log("SDL failed to start, error: " + error);
 		return NULL;
+	}
+	else cons->write_to_log("SDL initialized");
 
 	uint32_t windowFlags = SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
 
@@ -34,33 +38,87 @@ uint8_t * init_sdl(game_settings *settings) {
 	if (settings->vsync)
 		rendererFlags |= SDL_RENDERER_PRESENTVSYNC;
 
+	/* Window */
 	window = SDL_CreateWindow("Asteroids", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, settings->hresolution, settings->vresolution, windowFlags);
-	renderer = SDL_CreateRenderer(window, -1, rendererFlags);
-
-	screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, hres, vres);
-	pixelbuffer = (uint8_t *)malloc(vram_size);
+	if (window == NULL) {
+		std::string error = SDL_GetError();
+		cons->write_to_log("Failed to create window, error: " + error);
+		return NULL;
+	}
+	else cons->write_to_log("Created window");
 	SDL_RaiseWindow(window);
 	SDL_ShowCursor(SDL_DISABLE);
-
-	if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1)
+	
+	/* Renderer */
+	renderer = SDL_CreateRenderer(window, -1, rendererFlags);
+	if (renderer == NULL) {
+		std::string error = SDL_GetError();
+		cons->write_to_log("Failed to create renderer, error: " + error);
 		return NULL;
+	}
+	else cons->write_to_log("Created rendender");
 
-	if (TTF_Init() < 0)
+	/* Screen texture */
+	screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, hres, vres);
+	if (screen == NULL) {
+		std::string error = SDL_GetError();
+		cons->write_to_log("Failed to create screen texture, error: " + error);
 		return NULL;
+	}
+	else cons->write_to_log("Created screen texture");
 
 
+	pixelbuffer = (uint32_t *)malloc(vram_size);
+	if (pixelbuffer == NULL) {
+		cons->write_to_log("Failed to create pixel buffer");
+		return NULL;
+	}
+	else cons->write_to_log("Created pixel buffer");
+	memset(pixelbuffer, 0, vram_size);
 
+	if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1) {
+		std::string error = SDL_GetError();
+		cons->write_to_log("Failed to initialize audio API, error: " + error);
+		return NULL;
+	}
+	else cons->write_to_log("Audio API initialized");
+
+	if (TTF_Init() < 0){
+		std::string error = SDL_GetError();
+		cons->write_to_log("Failed to initialize TTF font API, error: " + error);
+		return NULL;
+	}
+	else cons->write_to_log("TTF font API initialized");
+
+	if (SDLNet_Init() < 0) {
+		std::string error = SDLNet_GetError();
+		cons->write_to_log("Failed to initialize network API, error: " + error);
+		return NULL;
+	}
+	else cons->write_to_log("Network API initialized");
+
+	cons->write_to_log(" ");
+	
 	return pixelbuffer;
 }
 
 void  exit_sdl(game_data *game) {
 
-	TTF_CloseFont(game->lucida_console_med);
 	TTF_Quit();
-	free(pixelbuffer);
-	SDL_DestroyWindow(window);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyTexture(screen);
+
+	Mix_CloseAudio();
+
+	if (pixelbuffer != NULL)
+		free(pixelbuffer);
+	if (window != NULL)
+		SDL_DestroyWindow(window);
+	if (renderer != NULL)
+		SDL_DestroyRenderer(renderer);
+	if (screen != NULL)
+		SDL_DestroyTexture(screen);
+
+	SDLNet_Quit();
+
 	SDL_Quit();
 }
 
@@ -90,19 +148,64 @@ void reset_sdl(game_settings *settings) {
 	screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, hres, vres);
 }
 
+mpoint2d vector_translate_gfx(mpoint2d *cartesian, unsigned int width, unsigned int height) {
+
+	mpoint2d gfx_point;
+	mpoint2d origin;
+	origin.x = width / 2;
+	origin.y = height / 2;
+
+	gfx_point.x = origin.x + cartesian->x;
+	gfx_point.y = origin.y - cartesian->y;
+
+	return gfx_point;
+}
+
 int draw_pixel(int x, int y, uint32_t color) {
 
-	uint8_t *v_address = pixelbuffer;
-
-	if (x > hres - 1 || y > vres - 1 || x < 0 || y < 0) 
+	if (x > hres - 1 || y > vres - 1 || x < 0 || y < 0)
 		return 1;
 
-	v_address += ((hres * y) + x) * pixel_bytes;
+	uint32_t *v_address = pixelbuffer;
+	
+	/* Move pointer to pixel location */
+	v_address += (((hres) * y) + x);
 
-	for (unsigned int i = 0; i < pixel_bytes; i++) {
-		*v_address = color >> (8 * i);
-		v_address++;
+	uint32_t fg_color = color >> 8;
+	uint32_t bg_color = *v_address >> 8;
+
+	/* If the pixel is blank no need to blend, if foreground color is black there is no need to write anything to the buffer */
+	if (!bg_color && !fg_color)
+		return 0;
+
+	/* Blend colors, no need to calculate blend if alpha is minimum or maximum */
+	uint8_t alpha = color & 0x000000FF;
+	if (alpha < 77)
+		return 0;
+
+	if (alpha == 0xFF) {
+		*v_address = color >> 8;
+		return 0;
 	}
+
+	/* Blending */
+	
+	uint8_t fg_blue = fg_color;
+	uint8_t fg_green = fg_color >> 8;
+	uint8_t fg_red = fg_color >> 16;
+
+	uint8_t bg_red = bg_color;
+	uint8_t bg_green = bg_color >> 8;
+	uint8_t bg_blue = bg_color >> 16;
+	
+	uint32_t final_blue = (alpha * (fg_blue - bg_blue) >> 8 )+ bg_blue;
+	uint32_t final_green = (alpha * (fg_green - bg_green) >> 8 )+ bg_green;
+	uint32_t final_red = (alpha * (fg_red - bg_red) >> 8 )+ bg_red;
+
+	uint32_t final_color = final_blue | (final_green << 8) | (final_red << 16);
+	
+	/* Write final color to buffer */
+	*v_address = final_color;
 
 	return 0;
 }
@@ -116,123 +219,25 @@ void display_frame() {
 	memset(pixelbuffer, 0, vram_size);
 }
 
+void render_hp_bar(player *p, int x, int y) {
 
-void show_splash(game_data *game) {
-	game->bmp.splash.draw(0, 0);
-	display_frame();
-	SDL_Delay(3000);
-	display_frame();
-	game->bmp.menubackground.draw(0, 0);
-	game->xpm.cursor.draw(hres / 2, vres / 2);
-	display_frame();
+	int bar_length = (int)(p->hp * 1.53);
+	uint32_t color;
+	if (p->hp > 70)
+		color = C_GREEN;
+	else if (p->hp >= 40)
+		color = C_YELLOW;
+	else color = C_RED;
+
+	for (int i = 0; i < 21; ++i)
+		for (int j = 0; j < bar_length; ++j) {
+			draw_pixel(x + j, y + i, color);
+		}
 }
 
-uint32_t get_surface_pixel(SDL_Surface *surface, int x, int y) {
-	int bpp = surface->format->BytesPerPixel;
-	/* Here p is the address to the pixel we want to retrieve */
-	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-
-	switch (bpp) {
-	case 1:
-		return *p;
-		break;
-
-	case 2:
-		return *(Uint16 *)p;
-		break;
-
-	case 3:
-		if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
-			return p[0] << 16 | p[1] << 8 | p[2];
-		else
-			return p[0] | p[1] << 8 | p[2] << 16;
-		break;
-
-	case 4:
-		return *(Uint32 *)p;
-		break;
-
-	default:
-		return 0;       /* shouldn't happen, but avoids warnings */
-	}
-}
-
-
-void draw_string(unsigned int x, unsigned int y, std::string line, uint32_t color, TTF_Font *font) {
-	
-	if (line.empty())
-		return;
-
-	SDL_Color col;
-	col.r = 99;
-	col.g = 0xCC;
-	col.b = 0xFF;
-
-	SDL_Surface* test = TTF_RenderText_Solid(font, line.c_str(), col);
-
-	for (int i = 0; i < test->h; ++i) 
-		for (int j = 0; j < test->w; ++j) 
-			if (get_surface_pixel(test, j, i)) 
-				draw_pixel(x + j, y + i, color);
-
-
-}
-
-
-void draw_digit(unsigned int num, int x, int y, game_data *game)
-{
-	switch (num) {
-	case 0: game->xpm.n_zero.draw(x, y); break;
-	case 1: game->xpm.n_one.draw(x, y); break;
-	case 2: game->xpm.n_two.draw(x, y); break;
-	case 3: game->xpm.n_three.draw(x, y); break;
-	case 4: game->xpm.n_four.draw(x, y); break;
-	case 5: game->xpm.n_five.draw(x, y); break;
-	case 6: game->xpm.n_six.draw(x, y); break;
-	case 7: game->xpm.n_seven.draw(x, y); break;
-	case 8: game->xpm.n_eight.draw(x, y); break;
-	case 9: game->xpm.n_nine.draw(x, y); break;
-
-	default: break;
-	}
-}
-
-void draw_large_digit(unsigned int num, int x, int y, game_data *game) {
-
-	switch (num) {
-	case 1:	game->xpm.n_one_large.draw(x, y); break;
-	case 2: game->xpm.n_two_large.draw(x, y); break;
-	case 3: game->xpm.n_three_large.draw(x, y); break;
-	default: break;
-	}
-}
-
-void draw_number(int number, int x, int y, game_data *game) {
-
-	int temp_number = number;
-	int size = 0;
-	int reverse_number = 0;
-
-	while (true) {
-		size++;
-		reverse_number = reverse_number * 10 + (temp_number % 10);
-		temp_number = (int)floor(temp_number / 10);
-		if (temp_number == 0)
-			break;
-	}
-
-	for (int i = 0; i < size; ++i) {
-		draw_digit(reverse_number % 10, x, y, game);
-		reverse_number = (int)floor(reverse_number / 10);
-		x += 10;
-	}
-}
-
-void render_seq_frame(game_data *game) {
-
-	game->bmp.game_background.draw(0, 0);
-	draw_ship(&game->bmp.pix_ship_blue, &game->player1);
-	draw_large_digit(game->timers.start_seq, 512, 304, game);
+void render_laser(player *p, Bitmap *laser, weapon *l) {
+	mpoint2d ws_laser = vector_translate_gfx(&l->getposition(), hres, vres);
+	laser->draw_transform((int)ws_laser.x, (int)ws_laser.y, l->get_travel_angle(), BMP_CENTER);
 }
 
 void draw_ship(Bitmap *bmp, player *p) {
@@ -245,90 +250,108 @@ void draw_ship(Bitmap *bmp, player *p) {
 	else degrees = vmouse.angle();
 
 	mpoint2d ws_pivot = vector_translate_gfx(&p->pivot, 1024, 768);
-	bmp->draw_transform((int)ws_pivot.x, (int)ws_pivot.y, degrees, 1);
+	bmp->draw_transform((int)ws_pivot.x, (int)ws_pivot.y, degrees, BMP_CENTER);
 }
 
 void draw_alien(game_data *game) {
+	static int expl_frame = 0;
 	if (game->alien.active) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
 		mvector2d vcannon (game->alien.pivot, game->alien.cannon);
-		game->bmp.alien_ship.draw_transform((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle(), 1);
+		game->bmp.alien_ship.draw_transform((int)ws_pivot.x, (int)ws_pivot.y, vcannon.angle() - 90, BMP_CENTER);
 
 		//Draw alien lasers
 		for (int i = 0; i < AMMO; i++) {
 			if (game->alien.lasers[i].active()) {
-				mpoint2d ws_laser = vector_translate_gfx(&game->alien.lasers[i].getposition(), 1024, 768);
-				game->xpm.red_laser.draw((int)ws_laser.x, (int)ws_laser.y);
+				render_laser(&game->alien, &game->bmp.laser_red, &game->alien.lasers[i]);
 			}
 		}
 	}
 
 	else if (game->timers.alien_death_timer > 0) {
 		mpoint2d ws_pivot = vector_translate_gfx(&game->alien.pivot, 1024, 768);
-		if (game->timers.alien_death_timer > 20) {
-			game->xpm.asteroid_dest1.draw ((int)ws_pivot.x, (int)ws_pivot.y);
-			game->bmp.alien_score.draw ((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
-		}
-		else if (game->timers.alien_death_timer > 10) {
-			game->xpm.asteroid_dest2.draw((int)ws_pivot.x, (int)ws_pivot.y);
-			game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
-		}
-		else {
-			game->xpm.asteroid_dest3.draw((int)ws_pivot.x, (int)ws_pivot.y);
-			game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
-		}
+		game->bmp.alien_score.draw((int)ws_pivot.x + 10, (int)ws_pivot.y - 35);
+
+		if (expl_frame > 9)
+			expl_frame = 0;
+		
+		game->bmp.ship_expl[expl_frame].draw_transform((int)ws_pivot.x, (int)ws_pivot.y, 0, BMP_CENTER);
+
+		/*
+			NEEDS TO BE MOVED TO INCREMENT TIMERS LATER, ANIMATION ON REPEAT WITH HIGH FRAMES
+			
+		*/
+		if (game->timers.alien_death_timer % 3 == 0) 
+			++expl_frame;
 	}
 }
 
 
 void draw_ast(asteroid *ast, Bitmap *bmp) {
 
-	mpoint2d ws_ast = vector_translate_gfx(&ast->position, 1024, 768);
-	bmp->draw_transform((int)ws_ast.x, (int)ws_ast.y, ast->degrees, 1);
+	mpoint2d ws_ast = vector_translate_gfx(&ast->position, hres, vres);
+	bmp->draw_transform((int)ws_ast.x, (int)ws_ast.y, ast->degrees, BMP_CENTER);
+}
+
+void render_crosshair(Bitmap *delta, player *player1) {
+	mvector2d vmouse(player1->pivot, player1->crosshair);
+	mpoint2d ws_mouse = vector_translate_gfx(&player1->crosshair, hres, vres);
+	delta->draw_transform((int)ws_mouse.x, (int)ws_mouse.y, vmouse.angle() - 90, BMP_CENTER);
+}
+
+void show_splash(game_data *game) {
+	game->bmp.splash.draw(0, 0);
+	game->bmp.pix_ship_blue.draw_transform(200, 400, 30, BMP_CENTER);
+	display_frame();
+	SDL_Delay(3000);
+	display_frame();
+	game->bmp.menubackground.draw(0, 0);
+	game->bmp.cursor.draw(hres / 2, vres / 2);
+	display_frame();
 }
 
 void render_frame(game_data *game) {
 
 	game->bmp.game_background.draw(0, 0);
 
-	mpoint2d ws_mouse = vector_translate_gfx(&game->player1.crosshair, 1024, 768);
-	game->xpm.crosshair.draw((int)ws_mouse.x, (int)ws_mouse.y);
+	if (game->player1.teleporting)
+		draw_ship(&game->bmp.pix_ship_blue_tele, &game->player1);
+
 	switch (game->s_event) {
 
-		case MAIN_THRUSTER: {
-			draw_ship(&game->bmp.pix_ship_blue_bt, &game->player1);
-			break;
-		}
-		case PORT_THRUSTER: {
-			draw_ship(&game->bmp.pix_ship_blue_pt, &game->player1);
-			break;
-		}
-		case STARBOARD_THRUSTER: {
-			draw_ship(&game->bmp.pix_ship_blue_st, &game->player1);
-			break;
-		}
-		case IDLING: {
-			draw_ship(&game->bmp.pix_ship_blue, &game->player1);
-			break;
-		}
-		default: {
-			draw_ship(&game->bmp.pix_ship_blue, &game->player1);
-			break;
-		}
+	case MAIN_THRUSTER: {
+		draw_ship(&game->bmp.pix_ship_blue_bt, &game->player1);
+		break;
+	}
+	case PORT_THRUSTER: {
+		draw_ship(&game->bmp.pix_ship_blue_pt, &game->player1);
+		break;
+	}
+	case STARBOARD_THRUSTER: {
+		draw_ship(&game->bmp.pix_ship_blue_st, &game->player1);
+		break;
+	}
+	case IDLING: {
+		draw_ship(&game->bmp.pix_ship_blue, &game->player1);
+		break;
+	}
+	default: {
+		draw_ship(&game->bmp.pix_ship_blue, &game->player1);
+		break;
+	}
 
 	}
 
 	//Draw lasers
-	for (int i = 0; i < AMMO; i++) {
+	for (int i = 0; i < AMMO; ++i) {
 		if (game->player1.lasers[i].active()) {
-			mpoint2d ws_laser = vector_translate_gfx(&game->player1.lasers[i].getposition(), 1024, 768);
-			game->xpm.blue_laser.draw((int)ws_laser.x, (int)ws_laser.y);
+			render_laser(&game->player1, &game->bmp.laser_blue, &game->player1.lasers[i]);
 		}
 	}
 
 
 	//Draw Asteroids
-	for (int i = 0; i < MAX_ASTEROIDS; i++) {
+	for (int i = 0; i < MAX_ASTEROIDS; ++i) {
 		mpoint2d ws_ast = vector_translate_gfx(&game->asteroid_field[i].position, 1024, 768);
 		//Active asteroids
 		if (game->asteroid_field[i].active) {
@@ -344,57 +367,71 @@ void render_frame(game_data *game) {
 				temp = game->bmp.medium_score;
 			else temp = game->bmp.large_score;
 
-			if (game->asteroid_field[i].death_timer > 20) {
-				game->xpm.asteroid_dest1.draw((int)ws_ast.x, (int)ws_ast.y);
+			if (game->asteroid_field[i].death_timer > 0) {
 				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
-			}
-			else if (game->asteroid_field[i].death_timer > 10) {
-				game->xpm.asteroid_dest2.draw((int)ws_ast.x, (int)ws_ast.y);
-				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
-			}
-			else if (game->asteroid_field[i].death_timer > 0) {
-				game->xpm.asteroid_dest3.draw((int)ws_ast.x, (int)ws_ast.y);
-				temp.draw((int)ws_ast.x + 10, (int)ws_ast.y - 35);
+
+				if (game->asteroid_field[i].death_frame > 9)
+					game->asteroid_field[i].death_frame = 0;
+
+				game->bmp.ast_dest[game->asteroid_field[i].death_frame].draw_transform((int)ws_ast.x, (int)ws_ast.y, game->asteroid_field[i].degrees, BMP_CENTER);
+
 			}
 		}
 	}
 
+	if (game->timers.hitreg_timer > 0)
+		render_crosshair(&game->bmp.delta_hit, &game->player1);
+	else render_crosshair(&game->bmp.delta, &game->player1);
+
+	game->bmp.ui_status.draw(10, 600);
+
 	//Draw FPS counter
 	if (game->settings.fps_counter) {
-		game->bmp.fps_header.draw(912, 3);
-		draw_number(game->timers.frames_per_second, 970, 10, game);
+		game->ttf_fonts.lucida_console_med.render_string(10, 10, "fps ", C_GREEN);
+		game->ttf_fonts.lucida_console_med.render_number(game->timers.frames_per_second, 35, 10, C_GREEN);
 	}
 
 	//Draw Score
-	game->bmp.score_header.draw (10, 4);
-	draw_number(game->player1.score, 80, 10, game);
+	game->ttf_fonts.copperplategothicbold.render_number(game->player1.score, 195, 710, C_WHITE);
 
 	//Draw_HP
-	if (game->player1.hp > 30)
-		game->bmp.hp_header.draw (130, 4);
-	else game->bmp.hp_header_low.draw(130, 4);
-	draw_number(game->player1.hp, 175, 10, game);
+	render_hp_bar(&game->player1, 198, 634);
 
-	//Draw Teleport Header
+	//Draw round
+	game->ttf_fonts.copperplategothicbold.render_number(game->player1.round - 4, 195, 686, C_WHITE);
+
+	//Draw Teleport statys
 	if (game->player1.jump_ready)
-		game->bmp.teleport_ready_header.draw(220, 4);
-	else game->bmp.teleport_not_ready_header.draw(220, 4);
+		game->ttf_fonts.copperplategothicbold.render_string(195, 662, "ready", C_GREEN);
+	else game->ttf_fonts.copperplategothicbold.render_string(195, 662, "down", C_RED);
 
 	draw_alien(game);
+}
+
+void handle_frame_wrapper(int id, game_data &game) {
+	handle_frame(&game);
+}
+
+void render_seq_frame(game_data *game) {
+
+	game->bmp.game_background.draw(0, 0);
+	draw_ship(&game->bmp.pix_ship_blue, &game->player1);
+	game->ttf_fonts.copperplategothicbold_massive.render_number(game->timers.start_seq, 512, 304, C_WHITE);
 }
 
 void render_console(game_data * game) {
 	game->bmp.gameconsole.draw(0, 0);
 	game->console.draw_column(game->timers.timerTick);
-	draw_string(5, VERT_BAR_Y_POS, game->console.get_command(), C_WHITE, game->lucida_console_med);
+	game->ttf_fonts.lucida_console_med.render_string(5, VERT_BAR_Y_POS, game->console.get_command(), C_WHITE);
+
 	std::queue <consolemessage> tempmessages = game->console.getconsole_messages();
+	
 	int messagessize = tempmessages.size();
 
 	for (int i = 0; i < messagessize; ++i) {
-		draw_string(15, 15 + (i * 14), tempmessages.front().message, tempmessages.front().messagecolor, game->lucida_console_med);
+		game->ttf_fonts.lucida_console_med.render_string(15, 15 + (i * 14), tempmessages.front().message, tempmessages.front().messagecolor);
 		tempmessages.pop();
 	}
-
 }
 
 void handle_frame(game_data *game) {
@@ -425,7 +462,7 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 		game->bmp.optionsbutton.draw(380, 300);
 		game->bmp.quitbutton.draw(380, 400);
 		for (int i = 0; i < 5; i++)
-			draw_number(game->highscores[i], 900, 60 + i * 40, game);
+			game->ttf_fonts.copperplategothicbold.render_number(game->highscores[i], 900, 60 + i * 40, C_WHITE);
 		
 		if (game->console.visible())
 			render_console(game);
@@ -528,25 +565,8 @@ void handle_menu_frame(game_data *game, Bitmap *bckgrd) {
 
 	}
 
-	game->xpm.cursor.draw(game->SDLevent.motion.x, game->SDLevent.motion.y);
+	game->bmp.cursor.draw(game->SDLevent.motion.x, game->SDLevent.motion.y);
 
 	display_frame();
 }
-
-
-
-mpoint2d vector_translate_gfx(mpoint2d *cartesian, unsigned int width, unsigned int height) {
-
-	mpoint2d gfx_point;
-	mpoint2d origin;
-	origin.x = width / 2;
-	origin.y = height / 2;
-
-	gfx_point.x = origin.x + cartesian->x;
-	gfx_point.y = origin.y - cartesian->y;
-
-	return gfx_point;
-}
-
-
 

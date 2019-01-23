@@ -1,431 +1,586 @@
+#include <fstream>
+#include <sstream>
+
 #include "graphics.h"
 #include "renderer.h"
 #include "mvector.h"
-#include "pixmaps.h"
 
-#pragma warning(disable:4996)
-#define COLOR_IGNORED 0xFFAEC9 //Alpha channel not possible in original minix project
+#define BMP_ID 0x4D42
 
-using namespace std;
+Bitmap::~Bitmap() {}
+DIB_Header Bitmap::get_dib_header() const { return dibheader; }
+uint32_t* Bitmap::get_data() { return pixel_data; }
 
-BitmapInfoHeader Bitmap::getBitmapInfoHeader() const { return infoheader; }
-uint8_t* Bitmap::getBitmapData() { return bitmapdata; }
 
-void Bitmap::setbitmapdata(uint8_t *bmpdata) { bitmapdata = bmpdata; }
-void Bitmap::setwidth(int width) { infoheader.width = width; }
-void Bitmap::setheight(int height) { infoheader.height = height; }
+int Bitmap::load(std::string filepath) {
 
-int Bitmap::load(const char* filepath) {
-	
-	//allocating size
-	bitmapdata = (uint8_t*)malloc(sizeof(Bitmap) - sizeof(infoheader));
+	/*
+		Notes: Since we're doing 4 bytes per pixel, the number of bytes in a row is always a multiple of 4, so
+		there is no need to check for padding
+	*/
 
-	//open file in binary mode
-	FILE *filePtr;
-	filePtr = fopen(filepath, "rb");
+	std::ifstream bmp;
 
-	if (filePtr == NULL)
+	bmp.open(filepath, std::ifstream::binary);
+
+	if (!bmp.is_open())
 		return 1;
 
-	//read the bitmap's file header
-	BitmapFileHeader fileheader;
-	fread(&fileheader, 2, 1, filePtr);
+	bmp.seekg(0, bmp.end);
+	int length = (int)bmp.tellg();
+	bmp.seekg(0, bmp.beg);
 
-	//verify correct file type
-	if (fileheader.type != 0x4D42)
-	{
-		fclose(filePtr);
+	char * buffer = new char[length];
+	bmp.read(buffer, length);
+	bmp.close();
+
+	int index = 0;
+
+	/* BMP HEADER*/
+
+	memcpy(&bmpheader.ID_field, buffer + index, 4);
+
+	// Check if it's a bmp file
+	if (bmpheader.ID_field != BMP_ID)
 		return 2;
-	}
 
-	if (fread(&fileheader.size, 4, 1, filePtr) != 1)
-		return 3;
+	index += 2;
+	memcpy(&bmpheader.size, buffer + index, 4);
+	index += 4;
+	memcpy(&bmpheader.application_specific, buffer + index, 4);
+	index += 4;
+	memcpy(&bmpheader.offset, buffer + index, 4);
+	
+	/* DIB HEADER */
 
-	if (fread(&fileheader.reserved, 4, 1, filePtr) != 1)
-		return 3;
+	index += 4;
+	memcpy(&dibheader.dib_size, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.width, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.height, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.planes, buffer + index, 2);
+	index += 2;
+	memcpy(&dibheader.bits_per_pixel, buffer + index, 2);
+	index += 2;
+	memcpy(&dibheader.compression, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.raw_data_size, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.h_pixels_per_meter, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.v_pixels_per_meter, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.colors_in_pallete, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.important_colors, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.red_bitmask, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.green_bitmask, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.blue_bitmask, buffer + index, 4);
+	index += 4;
+	memcpy(&dibheader.alpha_bitmask, buffer + index, 4);
 
-	if (fread(&fileheader.offset, 4, 1, filePtr) != 1)
-		return 3;
+	bytes_per_pixel = dibheader.bits_per_pixel >> 3;
+	int bytes_per_line = dibheader.width * bytes_per_pixel;
 
-	//read bitmap's info header
-	fread(&infoheader, sizeof(BitmapInfoHeader), 1, filePtr);
+	/* PIXEL DATA */
+	
+	/* Copy data to temporary buffer */
+	uint32_t *temp_data = (uint32_t *)malloc(dibheader.raw_data_size);
+	pixel_data = (uint32_t *)malloc(dibheader.raw_data_size);
+	memcpy(temp_data, buffer + bmpheader.offset, dibheader.raw_data_size);
 
-	int padding = 0;
-	int pixelbytes = infoheader.bits / 8;
-	int bytes_per_line = infoheader.width * pixelbytes;
+	/* Copy to final buffer by inverting data to start at the top left pixel */
+	for (unsigned int i = 0; i < dibheader.height; ++i)
+		memcpy(pixel_data + ((dibheader.height - (i + 1)) * dibheader.width), temp_data + (i*dibheader.width), bytes_per_line);
 
-	/* Check for padding size at the end of each line */
-	for (int i = 0; i < 3; ++i)
-		if ((bytes_per_line + padding) % 4 != 0)
-			++padding;
-		else break;
-
-	//move file pointer to beginning of bitmap data
-	fseek(filePtr, fileheader.offset, SEEK_SET);
-
-	//alocate memory to image data
-	uint8_t* bitmapImage = (uint8_t*)malloc(infoheader.imageSize);
-
-	//verify allocation
-	if (!bitmapImage)
-	{
-		free(bitmapImage);
-		fclose(filePtr);
-		return 1;
-	}
-
-	//read image data
-	fread(bitmapImage, infoheader.imageSize, 1, filePtr);
-
-	//making sure data was read
-	if (bitmapImage == NULL)
-	{
-		fclose(filePtr);
-		return 1;
-	}
-
-	//close file and return image data
-	fclose(filePtr);
-
-	if (padding) {
-		uint8_t *bmp = (uint8_t*)malloc(bytes_per_line * infoheader.height);
-
-		for (int i = 0; i < infoheader.height; ++i)
-			for (int j = 0; j < bytes_per_line; ++j)
-				bmp[(i * bytes_per_line) + j] = bitmapImage[(i * (bytes_per_line + padding)) + j];
-		bitmapdata = bmp;
-		free(bitmapImage);
-	}
-	else bitmapdata = bitmapImage;
-
+	free(temp_data);
+	free(buffer);
 	return 0;
 }
 
 void Bitmap::draw(int x, int y) {
-	/*
-		Draws a static bitmap in given location
-	*/
 
-	if (bitmapdata == NULL)
+	if (pixel_data == NULL)
 		return;
 
-	if (x < 0 || x + infoheader.width > hres  || y < 0 || y + infoheader.height > vres)
+	if (x < 0 || x + dibheader.width > hres || y < 0 || y + dibheader.height > vres)
 		return;
 
-	for (int i = infoheader.height; i != 0; --i)
-		for (int j = 0; j < infoheader.width; ++j) {
-			uint32_t color = (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 2)] << 16);
-			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 1)] << 8);
-			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3)]);
-			if (color && color != COLOR_IGNORED && i < infoheader.height - 1)
-				if (draw_pixel(x + j, y + infoheader.height - i - 1, color))
-					continue;
+	for (unsigned int i = 0; i < dibheader.height; ++i)
+		for (unsigned int j = 0; j < dibheader.width; ++j) {
+			uint32_t color = pixel_data[(i * dibheader.width) + j];
+			draw_pixel(x + j, y + i, color);
 		}
 }
 
-void Bitmap::draw_transform(int gx, int gy, double rotation_degrees, double scale) {
+void  Bitmap::draw_transform(int gx, int gy, double rotation_degrees, BMP_ALIGN alignment) {
 
-	/*
-		*Allows scaling bitmaps
-		*Rotation by assigning pixels from source
-		*Interpolation too slow...
-	*/
-	
-	if (bitmapdata == NULL)
+	if (pixel_data == NULL)
 		return;
 
-	int height = infoheader.height;
-	int width = infoheader.width;
-	int heightpadding = 0;;
-	int widthpadding = 0;
+	int height = dibheader.height;
+	int width = dibheader.width;
+	int y_comp = 0;
+	int x_comp = 0;
+	if (alignment = BMP_CENTER) {
+		x_comp = width / 2;
+		y_comp = height / 2;
+	}
+
+	if (gx < 0 || gx > hres || gy  < 0 || gy> vres)
+		return;
+
 	int center_x = (width / 2);
 	int center_y = (height / 2) + 1;
-	int upperbound = center_y / 2;
 
-	/* Check if out of bounds */
+	int limit = 0;
+	if (dibheader.height > dibheader.width)
+		limit = (int)(dibheader.height * 1.5);
+	else limit = (int)(dibheader.width * 1.5);
 
-	if (gx < 0 || gx + width > hres || gy  < 0 || gy + height> vres)
-		return;
 
-	/* Create extra drawing space for rotation*/
-	if (width > height)
-		heightpadding = width - height;
-	else widthpadding = height - width;
-
-	for (int i = height + heightpadding; i != -upperbound; --i)
-		for (int j = -center_x; j < width + widthpadding; ++j) {
-
-			/* Convert point to cartesian*/
+	for (unsigned int i = 0; i < dibheader.height - 1; ++i)
+		for (unsigned int j = 0; j < dibheader.width - 1; ++j) {
+			uint32_t color = 0;
 			int x = j - center_x;
 			int y = center_y - i;
-
-			/* Create and rotate vector, center is (0, 0) no need to convert */
 			mvector2d point(x, y);
-			point.rotate(270 - rotation_degrees);
-
-			/* Convert back to graphics coordinates*/
+			point.rotate(-rotation_degrees);
 			x = (int)(round(point.getX() + center_x));
 			y = (int)(round(center_y - point.getY()));
 
-			/* Check bounds and get color*/
-			uint32_t color;
-			if (x < 0 || x > width - 1 || y < 1 || y > height - 2)
-				continue;
-			else {
-				color = (bitmapdata[(y * width * 3) + (x * 3 + 2)] << 16);
-				color |= (bitmapdata[(y * width * 3) + (x * 3 + 1)] << 8);
-				color |= (bitmapdata[(y * width * 3) + (x * 3)]);
-			}
-			
-			/* Draw to pixelbuffer ignoring black and another color*/
-			if (color && color != COLOR_IGNORED) 
-				if (draw_pixel((int)(gx + ((j-center_x) * scale) ) , (int)(gy + ((i - center_y) * scale)), color))
-					continue;
+			if (x < (int)dibheader.width - 1 && x > 0 && y > 0 && y < (int)dibheader.height - 1)
+				color = pixel_data[(y * dibheader.width) + x];
+			draw_pixel(gx + j - x_comp, gy + i - y_comp, color);
 		}
 }
 
-void Bitmap::draw_transform2(int x, int y, uint32_t newcolor, double scale) {
-	
-	/*
-		Swaps a color in the bitmap and draws to pixelbuffer
-	*/
+int load_bitmaps(bitmap_data *bmp, console *cons) {
 
-	if (bitmapdata == NULL)
-		return;
+	std::string file;
+	cons->write_to_log("LOADING BMP ASSETS");
 
-	if (x < 0 || x + infoheader.width > hres || y < 0 || y + infoheader.height > vres)
-		return;
+	/* User interface elements*/
 
-	for (int i = infoheader.height; i != 0; --i)
-		for (int j = 0; j < infoheader.width; ++j) {
-			uint32_t color = (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 2)] << 16);
-			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3 + 1)] << 8);
-			color |= (bitmapdata[(i * infoheader.width * 3) + (j * 3)]);
-			if (color && color == C_WHITE && i < infoheader.height - 1)
-				if (draw_pixel(x + (int)(j * scale), y + (int)((infoheader.height - i - 1) * scale), newcolor))
-					continue;
-		}
-
-}
-
-void Bitmap::verticalflip() {
-	/*
-		Flips a bitmap vertically
-	*/
-
-	int pixelbytes = infoheader.bits / 8;
-	int bytes_per_line = infoheader.width * pixelbytes;
-	uint8_t *bmp = (uint8_t*)malloc(infoheader.imageSize);
-	memset(bmp, 0, infoheader.imageSize);
-	uint8_t *bmpdata = (uint8_t*)getBitmapData();
-
-	for (int i = 0; i < infoheader.height; ++i)
-		for (int j = 0; j < bytes_per_line; ++j)
-			bmp[((infoheader.height - 1 - i) * bytes_per_line) + j] = bmpdata[(i * bytes_per_line) + j];
-
-	free(bitmapdata);
-	bitmapdata = bmp;
-}
-
-
-int Pixmap::getHeight() { return height; }
-int Pixmap::getWidth() { return width; }
-uint32_t* Pixmap::getMap() { return map; }
-
-int Pixmap::read(const char *pixmap[]) {
-	int colors;
-
-	/* read width, height, colors */
-
-	if (sscanf(pixmap[0], "%d %d %d", &width, &height, &colors) != 3) {
-		printf("read_xpm: incorrect width, height, colors\n");
+	file = FILE_UI_PATH"splash.bmp";
+	if (bmp->splash.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
 		return 1;
 	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
 
-	unsigned int size = width * height;
-	map = (uint32_t*)malloc(size * 4);
-	uint32_t *color = (uint32_t*) malloc(colors);
-	char *symbol = (char*)malloc(colors); 
+	file = FILE_UI_PATH"MenuBackground.bmp";
+	if (bmp->menubackground.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
 
-	for (int i = 0; i < colors; i++) {
-		sscanf(pixmap[i + 1], "%c %x", &symbol[i], &color[i]);
+	file = FILE_UI_PATH"ui_status.bmp";
+	if (bmp->ui_status.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"highscoresbackground.bmp";
+	if (bmp->hsbackground.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"playbutton.bmp";
+	if (bmp->playbutton.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"optionsbutton.bmp";
+	if (bmp->optionsbutton.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"quitbutton.bmp";
+	if (bmp->quitbutton.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"options.bmp";
+	if (bmp->options.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"deathscreen.bmp";
+	if (bmp->death_screen.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"deathscreenhighscore.bmp";
+	if (bmp->death_screen_highscore.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"boxticked.bmp";
+	if (bmp->boxticked.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"pausemessage.bmp";
+	if (bmp->pause_message.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"parrow.bmp";
+	if (bmp->p_arrow.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"cursor.bmp";
+	if (bmp->cursor.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"console.bmp";
+	if (bmp->gameconsole.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_UI_PATH"slidemarker.bmp";
+	if (bmp->slidemarker.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+
+	/* Textures */
+
+	file = FILE_TEXTURES_PATH"gamebackground.bmp";
+	if (bmp->game_background.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"alienship.bmp";
+	if (bmp->alien_ship.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"mediumscore.bmp";
+	if (bmp->medium_score.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"largescore.bmp";
+	if (bmp->large_score.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"alienscore.bmp";
+	if (bmp->alien_score.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"LargeAsteroid.bmp";
+	if (bmp->large_asteroid.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"MediumAsteroid.bmp";
+	if (bmp->medium_asteroid.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_blue.bmp";
+	if (bmp->pix_ship_blue.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_blue_bt.bmp";
+	if (bmp->pix_ship_blue_bt.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_blue_pt.bmp";
+	if (bmp->pix_ship_blue_pt.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_blue_st.bmp";
+	if (bmp->pix_ship_blue_st.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_blue_teleport.bmp";
+	if (bmp->pix_ship_blue_tele.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"delta.bmp";
+	if (bmp->delta.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"delta_hit.bmp";
+	if (bmp->delta_hit.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"laser_blue.bmp";
+	if (bmp->laser_blue.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"laser_red.bmp";
+	if (bmp->laser_red.load(file)) {
+		cons->write_to_log("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->write_to_log("Loaded \"" + file + "\"");
+
+
+	/* Animations */
+
+	for (int i = 1; i < 11; ++i) {
+		std::stringstream ss1;
+		ss1 << FILE_ANIMATIONS_PATH "/explosion/exp" << i << ".bmp";
+		if (bmp->ship_expl[i - 1].load(ss1.str())) {
+			cons->write_to_log("Couldn't load \"" + ss1.str() + "\"");
+			return 1;
+		}
+		else cons->write_to_log("Loaded \"" + ss1.str() + "\"");
+
 	}
 
-	char *line = (char *)malloc(width);
-
-	for (int i = 0; i < height; i++) {
-		memcpy(line, pixmap[i + colors + 1], width);
-		for (int j = 0; j < width; j++) {
-			char sym = line[j];
-			int index = 0;
-			for (int k = 0; k < colors; k++) {
-				if (sym == symbol[k]) {
-					index = k;
-					break;
-				}
-			}
-			uint32_t colr = color[index];
-			map[(i * width) + j] = colr;
+	for (int i = 1; i < 11; ++i) {
+		std::stringstream ss2;
+		ss2 << "Assets/animations/astdest/astdest" << i << ".bmp";
+		if (bmp->ast_dest[i - 1].load(ss2.str())) {
+			cons->write_to_log("Couldn't load \"" + ss2.str() + "\"");
+			return 1;
 		}
+		else cons->write_to_log("Loaded \"" + ss2.str() + "\"");
 	}
-	return 0;
-}
-void Pixmap::draw(int gx, int gy) {
 
-	/* Phasing out pixmaps, rotation no longer needed*/
-
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++) {
-
-			uint32_t color = map[(i * width) + j];
-			if (color && color != COLOR_IGNORED) {
-				if (draw_pixel(gx + j, gy + i, color))
-					continue;
-			}
-		}
-}
-
-
-void Pixmap::draw(int gx, int gy, double scale) {
-
-	/* Phasing out pixmaps, rotation no longer needed*/
-
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++) {
-			
-			uint32_t color = map[(i * width) + j];
-			if (color && color != COLOR_IGNORED) {
-				if (draw_pixel(gx + (int)(j * scale), gy + (int)(i * scale), color))
-					continue;
-			}
-		}
-}
-
-
-int load_bitmaps(bitmap_data *bmp) {
-
-	/* Repeat until sucessfully loaded*/
-
-	while (bmp->menubackground.load("Assets/textures/MenuBackground.bmp"))
-		bmp->menubackground.load("Assets/textures/MenuBackground.bmp");
-
-	while (bmp->hsbackground.load("Assets/textures/highscoresbackground.bmp"))
-		bmp->hsbackground.load("Assets/textures/highscoresbackground.bmp");
-
-	while (bmp->playbutton.load("Assets/textures/playbutton.bmp"))
-		bmp->playbutton.load("Assets/textures/playbutton.bmp");
-
-	while (bmp->optionsbutton.load("Assets/textures/optionsbutton.bmp"))
-		bmp->optionsbutton.load("Assets/textures/optionsbutton.bmp");
-
-	while (bmp->quitbutton.load("Assets/textures/quitbutton.bmp"))
-		bmp->quitbutton.load("Assets/textures/quitbutton.bmp");
-
-	while (bmp->options.load("Assets/textures/options.bmp"))
-		bmp->options.load("Assets/textures/options.bmp");
-
-	while (bmp->death_screen.load("Assets/textures/deathscreen.bmp"))
-		bmp->death_screen.load("Assets/textures/deathscreen.bmp");
-
-	while (bmp->death_screen_highscore.load("Assets/textures/deathscreenhighscore.bmp"))
-		bmp->death_screen_highscore.load("Assets/textures/deathscreenhighscore.bmp");
-
-	while (bmp->boxticked.load("Assets/textures/boxticked.bmp"))
-		bmp->boxticked.load("Assets/textures/boxticked.bmp");
-
-	while (bmp->game_background.load("Assets/textures/gamebackground.bmp"))
-		bmp->game_background.load("Assets/textures/gamebackground.bmp");
-
-	while (bmp->pause_message.load("Assets/textures/pausemessage.bmp"))
-		bmp->pause_message.load("Assets/textures/pausemessage.bmp");
-
-	while (bmp->splash.load("Assets/textures/splash.bmp"))
-		bmp->splash.load("Assets/textures/splash.bmp");
-
-	while (bmp->score_header.load("Assets/textures/score_header.bmp"))
-		bmp->score_header.load("Assets/textures/score_header.bmp");
-
-	while (bmp->hp_header.load("Assets/textures/hp_header.bmp"))
-		bmp->hp_header.load("Assets/textures/hp_header.bmp");
-
-	while (bmp->hp_header_low.load("Assets/textures/hp_header_low.bmp"))
-		bmp->hp_header_low.load("Assets/textures/hp_header_low.bmp");
-
-	while (bmp->fps_header.load("Assets/textures/fps_header.bmp"))
-		bmp->fps_header.load("Assets/textures/fps_header.bmp");
-
-	while (bmp->alien_ship.load("Assets/textures/alienship.bmp"))
-		bmp->alien_ship.load("Assets/textures/alienship.bmp");
-
-	while (bmp->teleport_ready_header.load("Assets/textures/jmpheaderrdy.bmp"))
-		bmp->teleport_ready_header.load("Assets/textures/jmpheaderrdy.bmp");
-
-	while (bmp->teleport_not_ready_header.load("Assets/textures/jmpheadernotrdy.bmp"))
-		bmp->teleport_not_ready_header.load("Assets/textures/jmpheadernotrdy.bmp");
-
-	while (bmp->medium_score.load("Assets/textures/mediumscore.bmp"))
-		bmp->medium_score.load("Assets/textures/mediumscore.bmp");
-
-	while (bmp->large_score.load("Assets/textures/largescore.bmp"))
-		bmp->large_score.load("Assets/textures/largescore.bmp");
-
-	while (bmp->alien_score.load("Assets/textures/alienscore.bmp"))
-		bmp->alien_score.load("Assets/textures/alienscore.bmp");
-
-	while (bmp->large_asteroid.load("Assets/textures/LargeAsteroid.bmp"))
-		bmp->large_asteroid.load("Assets/textures/LargeAsteroid.bmp");
-
-	while (bmp->medium_asteroid.load("Assets/textures/MediumAsteroid.bmp"))
-		bmp->medium_asteroid.load("Assets/textures/MediumAsteroid.bmp");
-
-	while (bmp->pix_ship_blue.load("Assets/textures/pix_ship_blue.bmp"))
-		bmp->pix_ship_blue.load("Assets/textures/pix_ship_blue.bmp");
-
-	while (bmp->pix_ship_blue_bt.load("Assets/textures/pix_ship_blue_bt.bmp"))
-		bmp->pix_ship_blue_bt.load("Assets/textures/pix_ship_blue_bt.bmp");
-
-	while (bmp->pix_ship_blue_pt.load("Assets/textures/pix_ship_blue_pt.bmp"))
-		bmp->pix_ship_blue_pt.load("Assets/textures/pix_ship_blue_pt.bmp");
-
-	while (bmp->pix_ship_blue_st.load("Assets/textures/pix_ship_blue_st.bmp"))
-		bmp->pix_ship_blue_st.load("Assets/textures/pix_ship_blue_st.bmp");
-
-	while (bmp->p_arrow.load("Assets/textures/parrow.bmp"))
-		bmp->p_arrow.load("Assets/textures/parrow.bmp");
-
-	while (bmp->gameconsole.load("Assets/textures/console.bmp"))
-		bmp->gameconsole.load("Assets/textures/console.bmp");
-
-	while (bmp->slidemarker.load("Assets/textures/slidemarker.bmp"))
-		bmp->slidemarker.load("Assets/textures/slidemarker.bmp");
+	cons->write_to_log("BMP ASSETS LOADED");
+	cons->write_to_log(" ");
 
 	return 0;
 }
 
-void load_xpms(pixmap_data *pix) {
 
-	pix->asteroid_dest1.read(pix_asteroid_destroyed_1);
-	pix->asteroid_dest2.read(pix_asteroid_destroyed_2);
-	pix->asteroid_dest3.read(pix_asteroid_destroyed_3);
+void free_bitmaps(bitmap_data *bmp) {
+	
 
-	pix->cursor.read(pix_menu_cursor);
-	pix->crosshair.read(pix_crosshair);
+	free(bmp->menubackground.get_data());
+	free(bmp->ui_status.get_data());
+	free(bmp->hsbackground.get_data());
+	free(bmp->playbutton.get_data());
+	free(bmp->optionsbutton.get_data());
+	free(bmp->quitbutton.get_data());
+	free(bmp->options.get_data());
+	free(bmp->death_screen.get_data());
+	free(bmp->death_screen_highscore.get_data());
+	free(bmp->boxticked.get_data());
+	free(bmp->game_background.get_data());
+	free(bmp->pause_message.get_data());
+	free(bmp->splash.get_data());
+	free(bmp->alien_ship.get_data());
+	free(bmp->medium_score.get_data());
+	free(bmp->large_score.get_data());
+	free(bmp->alien_score.get_data());
+	free(bmp->large_asteroid.get_data());
+	free(bmp->medium_asteroid.get_data());
+	free(bmp->pix_ship_blue.get_data());
+	free(bmp->pix_ship_blue_bt.get_data());
+	free(bmp->pix_ship_blue_pt.get_data());
+	free(bmp->pix_ship_blue_st.get_data());
+	free(bmp->delta.get_data());
+	free(bmp->delta_hit.get_data());
+	free(bmp->laser_blue.get_data());
+	free(bmp->laser_red.get_data());
+	free(bmp->p_arrow.get_data());
+	free(bmp->cursor.get_data());
+	free(bmp->gameconsole.get_data());
+	free(bmp->slidemarker.get_data());
 
-	pix->blue_laser.read(pix_laser);
-	pix->red_laser.read(pix_laser_red);
-
-	pix->n_colon.read(colon);
-	pix->n_zero.read(zero);
-	pix->n_one.read(one);
-	pix->n_two.read(two);
-	pix->n_three.read(three);
-	pix->n_four.read(four);
-	pix->n_five.read(five);
-	pix->n_six.read(six);
-	pix->n_seven.read(seven);
-	pix->n_eight.read(eight);
-	pix->n_nine.read(nine);
-	pix->n_one_large.read(one_large);
-	pix->n_two_large.read(two_large);
-	pix->n_three_large.read(three_large);
+	for (int i = 0; i < 10; ++i) {
+		free(bmp->ship_expl[i].get_data());
+	}
+	for (int i = 0; i < 3; ++i) {
+		free(bmp->ast_dest[i].get_data());
+	}
 }
+
+/* FONTS */
+
+
+Font::Font(std::string filepath, int sz) {
+	font = TTF_OpenFont(filepath.c_str(), sz);
+	size = sz;
+}
+
+Font::~Font() { TTF_CloseFont(font); }
+
+TTF_Font * Font::get_font_data() const { return font; }
+int Font::get_size() const { return size; }
+
+int Font::load(std::string filepath, int sz) {
+	font = TTF_OpenFont(filepath.c_str(), sz);
+	if (font == NULL)
+		return 1;
+	size = sz;
+	return 0;
+}
+
+uint32_t Font::get_surface_pixel(SDL_Surface *surface, int x, int y) {
+
+	/* Got this function from http://sdl.beuc.net/sdl.wiki/Pixel_Access */
+
+	int bpp = surface->format->BytesPerPixel;
+	/* Here p is the address to the pixel we want to retrieve */
+	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+	switch (bpp) {
+	case 1:
+		return *p;
+		break;
+
+	case 2:
+		return *(Uint16 *)p;
+		break;
+
+	case 3:
+		if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
+			return p[0] << 16 | p[1] << 8 | p[2];
+		else
+			return p[0] | p[1] << 8 | p[2] << 16;
+		break;
+
+	case 4:
+		return *(Uint32 *)p;
+		break;
+
+	default:
+		return 0;       /* shouldn't happen, but avoids warnings */
+	}
+}
+
+void Font::render_string(unsigned int x, unsigned int y, std::string line, uint32_t color) {
+	
+	if (line.empty())
+		return;
+
+	SDL_Color unimportant_color;
+	unimportant_color.r = 99;
+	unimportant_color.g = 0xCC;
+	unimportant_color.b = 0xFF;
+
+	SDL_Surface* tempsurf = TTF_RenderText_Solid(font, line.c_str(), unimportant_color);
+
+	for (int i = 0; i < tempsurf->h; ++i)
+		for (int j = 0; j < tempsurf->w; ++j)
+			if (get_surface_pixel(tempsurf, j, i))
+				draw_pixel(x + j, y + i, color);
+
+	SDL_FreeSurface(tempsurf);
+}
+
+void Font::render_string(unsigned int x, unsigned int y, std::string line, uint32_t fg_color, uint32_t bg_color) {
+
+	if (line.empty())
+		return;
+
+	SDL_Color unimportant_color;
+	unimportant_color.r = 99;
+	unimportant_color.g = 0xCC;
+	unimportant_color.b = 0xFF;
+
+	SDL_Surface* tempsurf = TTF_RenderText_Solid(font, line.c_str(), unimportant_color);
+
+	for (int i = 0; i < tempsurf->h; ++i)
+		for (int j = 0; j < tempsurf->w; ++j)
+			if (get_surface_pixel(tempsurf, j, i))
+				draw_pixel(x + j, y + i, fg_color);
+			else draw_pixel(x + j, y + i, bg_color);
+
+	SDL_FreeSurface(tempsurf);
+
+}
+
+void Font::render_number(double number, int x, int y, uint32_t color) {
+
+	std::stringstream ss;
+	ss << number;
+
+	SDL_Color unimportant_color;
+	unimportant_color.r = 99;
+	unimportant_color.g = 0xCC;
+	unimportant_color.b = 0xFF;
+
+	SDL_Surface* tempsurf = TTF_RenderText_Solid(font, ss.str().c_str(), unimportant_color);
+
+	for (int i = 0; i < tempsurf->h; ++i)
+		for (int j = 0; j < tempsurf->w; ++j)
+			if (get_surface_pixel(tempsurf, j, i))
+				draw_pixel(x + j, y + i, color);
+
+	SDL_FreeSurface(tempsurf);
+}
+

@@ -1,92 +1,79 @@
 #pragma once
 #include <stdint.h>
+#include <string>
+#include <macros.h>
+#include "SDL_ttf.h"
+#include "console.h"
 
 
 typedef struct {
-	unsigned short type; 	//specifies file type
-	unsigned int size; 		//size (in bytes9 of file
-	unsigned int reserved; 	//reserved, must be 0
-	unsigned int offset; 	//specifies offset (in bytes) of the bitmapFileHeader to the bitmap's bits
-} BitmapFileHeader;
+	uint16_t ID_field;
+	uint32_t size;
+	uint32_t application_specific;
+	unsigned int offset;
+} BMP_Header;
 
 typedef struct {
 
-	unsigned int size; 				//specifies no. of bytes required by the struct
-	int width; 						//width (in px)
-	int height; 					//height (in px)
-	unsigned short planes;			//specifies no. of colour planes, must be 1
-	unsigned short bits; 			//no. of bits per pixel
-	unsigned int compression; 		//type of compression
-	unsigned int imageSize; 		//size of image in bytes
-	int xResolution; 				//pixels per meter in X-axis
-	int YResolution; 				//pixels per meter in Y-axis
-	unsigned int nColours; 			//number of colours used by the bitmap
-	unsigned int importantColours; 	//number of important colours in the bitmap
-} BitmapInfoHeader;
+	uint32_t dib_size; 
+	uint32_t width;
+	uint32_t height;
+	uint16_t planes;
+	uint16_t bits_per_pixel;
+	uint32_t compression;
+	uint32_t raw_data_size;
+	uint32_t h_pixels_per_meter;
+	uint32_t v_pixels_per_meter;
+	uint32_t colors_in_pallete;
+	uint32_t important_colors;
+	uint32_t red_bitmask;
+	uint32_t green_bitmask;
+	uint32_t blue_bitmask;
+	uint32_t alpha_bitmask;
+} DIB_Header;
 
 class Bitmap {
-	BitmapInfoHeader infoheader;
-	uint8_t *bitmapdata;
+	BMP_Header bmpheader;
+	DIB_Header dibheader;
+	uint32_t *pixel_data;
+	uint8_t bytes_per_pixel;
 public:
 	Bitmap() {};
-	BitmapInfoHeader getBitmapInfoHeader() const;
-	uint8_t* getBitmapData();
+	~Bitmap();
+	DIB_Header get_dib_header() const;
+	uint32_t* get_data();
 
-	void setbitmapdata(uint8_t *bmpdata);
-	void setwidth(int width);
-	void setheight(int height);
-
-	int load(const char* filepath);
+	int load(std::string filepath);
 	void draw(int x, int y);
-	void draw_transform(int gx, int gy, double rotation_degrees, double scale);
-	void draw_transform2(int gx, int gy, uint32_t newcolor, double scale);
-	void verticalflip();
+	void draw_transform(int gx, int gy, double rotation_degrees, BMP_ALIGN alignment);
 };
 
-class Pixmap {
-	int height;
-	int width;
-	uint32_t *map;
+/* TTF_Font wrapper class */
+
+class Font {
+	TTF_Font *font;
+	int size;
 public:
-	Pixmap() {};
-	int getHeight();
-	int getWidth();
-	uint32_t* getMap();
-	int read(const char *map[]);
-	void draw(int gx, int gy);
-	void draw(int gx, int gy, double scale);
+	Font() {};
+	Font(std::string filepath, int sz);
+	~Font();
+
+	TTF_Font * get_font_data() const;
+	int get_size() const;
+
+	int load(std::string filepath, int sz);
+	uint32_t get_surface_pixel(SDL_Surface *surface, int x, int y);
+	void render_string(unsigned int x, unsigned int y, std::string line, uint32_t color);
+	void render_string(unsigned int x, unsigned int y, std::string line, uint32_t fg_color, uint32_t bg_color);
+	void render_number(double number, int x, int y, uint32_t color);
 };
 
-//GAME DATA
-
-typedef struct {
-	Pixmap asteroid_dest1;
-	Pixmap asteroid_dest2;
-	Pixmap asteroid_dest3;
-
-	Pixmap cursor;
-	Pixmap crosshair;
-	Pixmap blue_laser;
-	Pixmap red_laser;
-
-	Pixmap n_colon;
-	Pixmap n_zero;
-	Pixmap n_one;
-	Pixmap n_two;
-	Pixmap n_three;
-	Pixmap n_four;
-	Pixmap n_five;
-	Pixmap n_six;
-	Pixmap n_seven;
-	Pixmap n_eight;
-	Pixmap n_nine;
-	Pixmap n_one_large;
-	Pixmap n_two_large;
-	Pixmap n_three_large;
-}pixmap_data;
+/* GAME DATA */
 
 typedef struct {
 	Bitmap menubackground;
+	Bitmap ui_status;
+	Bitmap cursor;
 	Bitmap hsbackground;
 	Bitmap gameconsole;
 	Bitmap playbutton;
@@ -99,12 +86,6 @@ typedef struct {
 	Bitmap splash;
 	Bitmap death_screen;
 	Bitmap death_screen_highscore;
-	Bitmap score_header;
-	Bitmap hp_header;
-	Bitmap hp_header_low;
-	Bitmap fps_header;
-	Bitmap teleport_ready_header;
-	Bitmap teleport_not_ready_header;
 	Bitmap medium_score;
 	Bitmap large_score;
 	Bitmap alien_score;
@@ -115,11 +96,25 @@ typedef struct {
 	Bitmap pix_ship_blue_bt;
 	Bitmap pix_ship_blue_st;
 	Bitmap pix_ship_blue_pt;
+	Bitmap pix_ship_blue_tele;
+	Bitmap delta;
+	Bitmap delta_hit;
 	Bitmap p_arrow;
 	Bitmap slidemarker;
+	Bitmap ship_expl[10];					//Animation
+	Bitmap ast_dest[10];					//Animation
+	Bitmap laser_blue;
+	Bitmap laser_red;
+
 }bitmap_data;
 
+typedef struct {
+	Font lucida_console_med;
+	Font copperplategothicbold;
+	Font copperplategothicbold_massive;
+}font_data;
 
-int load_bitmaps(bitmap_data *bmp);
-void load_xpms(pixmap_data *pix);
+/* Auxiliary */
 
+int load_bitmaps(bitmap_data *bmp, console *cons);
+void free_bitmaps(bitmap_data *bmp);

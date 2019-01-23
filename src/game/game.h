@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "console.h"
 #include "netcode.h"
-#include "SDL_ttf.h"
+
 
 typedef enum { KEYBOARD, MOUSE, TIMER} event_type;
 
@@ -36,12 +36,11 @@ typedef struct {
 	event_type event;
 	ship_event s_event;
 
-	uint8_t *gr_buffer;								/**< @brief Pointer to local pixel buffer */
+	uint32_t *gr_buffer;							/**< @brief Pointer to local pixel buffer */
 	char FILEPATH[50];								/**< @brief Filepath to game folder */
 	bitmap_data bmp;								/**< @brief All bmps images */
-	pixmap_data xpm;								/**< @brief All pixmaps */
-	TTF_Font *lucida_console_med;
-	sound_data sound;
+	font_data ttf_fonts;							/**< @brief All ttf fonts */
+	sound_data sound;								/**< @brief All game sounds */
 	game_settings settings;							/**< @brief Options menu's settings */
 
 } game_data;
@@ -65,7 +64,7 @@ void start_timers(game_timers *timers);
 *
 * @param timers Game timers
 */
-void increment_timers(game_timers *timers);
+void increment_timers(game_timers *timers, asteroid asteroid_field[]);
 /**
 * @brief This function does all singleplayer physics operations
 *
@@ -97,3 +96,4 @@ void new_round_reset(game_data* game);
 
 void exec_console_cmd(std::string cmd, game_data* game);
 
+void kill_sequence(game_data* game);
