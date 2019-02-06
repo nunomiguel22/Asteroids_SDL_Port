@@ -4,12 +4,16 @@ Port/continuation of LCOM's project "Asteroids" for minix, based on the original
 ## Instructions:
 * settings.cfg contains the game settings in the options menu.
 * To compile you need SDL 2.0 aswell as SDL mixer, SDL_ttf and SDL_net libraries installed. The ctpl library is also needed or you can alter the lines that make use of multithreading.
-* This game uses various free to use assets
+* You can use the command help on the console to get a list of all available commands.
+* This game uses various free to use assets, the multiplayer mode of the game has various bugs and is mostly unfinished.
+* This project was done mostly for fun and learning, don't expect a polished game.
 
 ## Game Demo:
-![Screenshot](demo/newconsole.jpg)
-![Screenshot](demo/optionsmenu.jpg)
+![Screenshot](demo/menu.jpg)
+![Screenshot](demo/console.jpg)
 Game demo
-![Screenshot](demo/newdemo.gif)
+![Screenshot](demo/singleplayer.jpg)
+![Screenshot](demo/multiplayer.jpg)
+
 Original Minix Project demo
 ![Screenshot](demo/demo.gif)
