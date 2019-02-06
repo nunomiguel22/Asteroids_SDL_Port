@@ -10,8 +10,8 @@
 void alien_spawn(player *p) {
 
 	/*Initiates alien ships values, gives it random movement */
-	p->force.setX((double)rand() / RAND_MAX);
-	p->force.setY((double)rand() / RAND_MAX);
+	p->force.setX((float)rand() / RAND_MAX);
+	p->force.setY((float)rand() / RAND_MAX);
 
 	int random_xsign = rand() % 10;
 	int random_ysign = rand() % 10;
@@ -22,8 +22,8 @@ void alien_spawn(player *p) {
 	if (random_ysign >= 5)
 		p->force.setY(p->force.getY() * -1);
 
-	p->pivot.x = rand() % math_h_positive_bound;
-	p->pivot.y = rand() % math_v_positive_bound;
+	p->pivot.x = (float)(rand() % math_h_positive_bound);
+	p->pivot.y = (float)(rand() % math_v_positive_bound);
 
 	p->cannon.x = p->pivot.x;
 	p->cannon.y = p->pivot.y + 40;
@@ -36,10 +36,11 @@ void alien_spawn(player *p) {
 
 	p->hp = ALIEN_MAX_HEALTH;
 	p->hit_radius = ALIEN_HIT_RADIUS;
-	p->active = true;
+	p->status = 0;
+	p->status |= BIT(0);
 
 	for (int i = 0; i < AMMO; i++) {
-		p->lasers[i].setstatus(false);
+		p->lasers[i].deactivate();
 	}
 }
 
@@ -60,7 +61,7 @@ bool alien_update(player *alien, player *player1, game_timers *timers) {
 	mvector2d vcannon(alien->pivot, alien->cannon);
 	mvector2d vships(alien->pivot, player1->pivot);
 
-	double ship_degrees = vships.angle() - vcannon.angle();
+	float ship_degrees = vships.angle() - vcannon.angle();
 	if (ship_degrees) {
 		if (ship_degrees < 0)
 			vcannon.rotate(-ALIEN_ROTATION_SPEED);
@@ -77,11 +78,9 @@ bool alien_update(player *alien, player *player1, game_timers *timers) {
 	}
 
 	/* Destroys out of bounds lasers */
-	for (unsigned int i = 0; i < AMMO; i++) {
-		if (alien->lasers[i].active()) {
-			alien->lasers[i].updateposition();
-			alien->lasers[i].checkbounds();
-		}
+	for (unsigned int i = 0; i < AMMO; ++i) {
+		if (alien->lasers[i].is_active()) 
+			alien->lasers[i].update();
 	}
 	return alien_fired;
 }
@@ -90,17 +89,17 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 
 	/* Player laser to alien ship collision */
 	for (unsigned int j = 0; j < AMMO; j++) {
-		if (player1->lasers[j].active()) {
-			mpoint2d laserpos = player1->lasers[j].getposition();
+		if (player1->lasers[j].is_active()) {
+			mpoint2d laserpos = player1->lasers[j].get_position();
 			mvector2d v_ast_laser(laserpos, alien->pivot);
 
 			if (v_ast_laser.magnitude() <= alien->hit_radius) {
-				player1->hit_reg = true;
+				player1->status |= BIT(2);
 				alien->hp -= PLAYER_LASER_DAMAGE;
-				player1->lasers[j].setstatus(false);
+				player1->lasers[j].deactivate();
 				if (alien->hp <= 0) {
 					timers->alien_death_timer = (unsigned int)(ALIEN_DEATH_DURATION * 60);
-					alien->active = false;
+					alien->status &= ~BIT(0);
 					player1->score += 400;
 				}
 			}
@@ -109,20 +108,20 @@ void alien_collision(player *alien, player *player1, game_timers *timers) {
 
 	/* Alien laser to player ship collision */
 	for (unsigned int j = 0; j < AMMO; j++) {
-		if (alien->lasers[j].active()) {
-			mpoint2d laserpos = alien->lasers[j].getposition();
+		if (alien->lasers[j].is_active()) {
+			mpoint2d laserpos = alien->lasers[j].get_position();
 			mvector2d v_ast_laser(laserpos, player1->pivot);
 
 			if (v_ast_laser.magnitude() <= player1->hit_radius) {
 				player1->hp -= 20;
-				alien->lasers[j].setstatus(false);
+				alien->lasers[j].deactivate();
 			}
 		}
 	}
 
 	/* Alien ship to player ship collision, this kills the player ship */
 	mvector2d v_ast_ship(player1->pivot, alien->pivot);
-	double total_radius = player1->hit_radius + alien->hit_radius;
-	if (total_radius > v_ast_ship.magnitude() && !player1->invulnerability)
+	float total_radius = player1->hit_radius + alien->hit_radius;
+	if (total_radius > v_ast_ship.magnitude() && !(player1->status & BIT(3)))
 		player1->hp -= player1->hp;
 }

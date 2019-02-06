@@ -18,6 +18,7 @@ void display_frame();										//Show frame on screen
 
 /* Render entities */
 void render_hp_bar(player *p, int x, int y);
+void render_mp_hp_bars(player *p, int x, int y);
 void render_laser(player *p, Bitmap *laser, weapon *l);
 void draw_ship(Bitmap *bmp, player *p);
 void draw_alien(game_data *game);
@@ -27,10 +28,13 @@ void render_crosshair(Bitmap *delta, player *player1);
 /* Render scenes*/
 void show_splash(game_data *game);
 void render_frame(game_data *game);
+void render_mp_frame(game_data *game);
 void render_seq_frame(game_data *game);
+void render_mp_seq_frame(game_data *game);
 void render_console(game_data * game);
 
 void handle_frame(game_data *game);
+void handle_mp_frame(game_data *game);
 void handle_frame_wrapper(int id, game_data &game);
 
 void handle_menu_frame(game_data *game, Bitmap *bckgrd);

@@ -2,39 +2,55 @@
 
 #include "math.h"
 #include <stdio.h>
+#include <stdint.h>
 
-#define mpi 3.14159265358979323846264338327950288	//	PI 
-#define mpi2 1.57079632679489661923132169163975144	//	PI / 2
+const float mpi = 3.14159265358979323846264338327950288f;	//	PI 
+const float mpi2 = 1.57079632679489661923132169163975144f;	//	PI / 2
 
 typedef struct {
-	double x;
-	double y;
+	float x;
+	float y;
 } mpoint2d;
 
 class mvector2d {
-	double x;
-	double y;
+	float x;
+	float y;
 public:
 	
 	mvector2d() {};
 
 	mvector2d(mpoint2d &P, mpoint2d &Q) { x = Q.x - P.x; y = Q.y - P.y; }
 	
-	mvector2d(double x, double y) { this->x = x; this->y = y; }
+	mvector2d(float x, float y) { this->x = x; this->y = y; }
 
-	double getX() const { return this->x; }
-	double getY() const { return this->y; }
+	float getX() const { return this->x; }
+	float getY() const { return this->y; }
 
-	void setX(double x) { this->x = x; };
-	void setY(double y) { this->y = y; };
+	void setX(float x) { this->x = x; };
+	void setY(float y) { this->y = y; };
 
 	void print() {
 		printf("( %f , %f )\n", x, y);
 	}
 
-	double magnitude() {
-		double mag = pow(this->x, 2) + pow(this->y, 2);
-		return sqrt(mag);
+	float magnitude() {
+		float mag = (float)(pow(x, 2) + pow(y, 2));
+		return (float)sqrt(mag);
+	}
+
+	float rsqrt() {
+
+		float mag = (float)(pow(x, 2) + pow(y, 2));
+
+		const float threehalfs = 1.5F;
+		const float x2 = mag * 0.5F;
+
+		float res = mag;
+		uint32_t& i = *reinterpret_cast<uint32_t *>(&res);    // evil floating point bit level hacking
+		i = 0x5f3759df - (i >> 1);                             // what the fuck?
+		res = res * (threehalfs - (x2 * res * res));
+
+		return res;
 	}
 
 	//OPERATORS
@@ -59,34 +75,34 @@ public:
 		return nv;
 	}
 	
-	void operator *= (double scalar) {
+	void operator *= (float scalar) {
 			x *= scalar;
 		y *= scalar;
 	}
 
-	mvector2d operator * (double &scalar) {
+	mvector2d operator * (float &scalar) {
 				mvector2d nv(x * scalar, y * scalar);
 		return nv;
 	}
 
-	void operator /= (double &scalar) {
+	void operator /= (float &scalar) {
 		x /= scalar;
 		y /= scalar;
 	}
 
-	mvector2d operator / (double &scalar) {
+	mvector2d operator / (float &scalar) {
 		mvector2d nv(x / scalar, y / scalar);
 		return nv;
 	}
 
-	double dot_product (mvector2d &v1) {
+	float dot_product (mvector2d &v1) {
 		return (x * v1.x + y * v1.y);
 	}
 
-	double angle() {
-		double mag = magnitude();
-		double radians = acos(x / mag);
-		double degrees = (radians / mpi) * 180;
+	float angle() {
+		float mag = magnitude();
+		float radians = (float)(acos(x / mag));
+		float degrees = (radians / mpi) * 180;
 
 		if (y < 0.0)
 		degrees *= -1;
@@ -94,36 +110,37 @@ public:
 		return degrees;
 	}
 
-	double angle(mvector2d &v1) {
-		double radians = acos(dot_product(v1) / (magnitude() * v1.magnitude()));
-		double degrees = (radians / mpi) * 180;
+	float angle(mvector2d &v1) {
+		float radians =(float) (acos(dot_product(v1) / (magnitude() * v1.magnitude())));
+		float degrees = (radians / mpi) * 180;
 		return degrees;
 	}
 
-	void rotate(double degrees) {
-		double radians = degrees * mpi / 180;
-		double angle_cos = cos(radians);
-		double angle_sin = sin(radians);
+	void rotate(float degrees) {
+		float radians = degrees * mpi / 180;
+		float angle_cos = (float)cos(radians);
+		float angle_sin = (float)sin(radians);
 
-		double nx = x * angle_cos - y * angle_sin;
-		double ny = x * angle_sin + y * angle_cos;
+		float nx = x * angle_cos - y * angle_sin;
+		float ny = x * angle_sin + y * angle_cos;
 
 		x = nx;
 		y = ny;
 	}
 
-	void limit(double limit) {
+	void limit(float limit) {
 
-		double magn = this->magnitude();
+		float magn = this->magnitude();
 		if (magn > limit)
 			*this *= (limit / magn);
 	}
 
 	mvector2d versor() {
 
-		double magn = this->magnitude();
+		float inverse_sqrt = rsqrt();
+		
 		mvector2d versor = *this;
-		versor /= magn;
+		versor *= inverse_sqrt;
 		return versor;
 	}
 };

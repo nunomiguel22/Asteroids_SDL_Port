@@ -13,6 +13,7 @@ typedef struct {
 	int fps;
 	int effects_volume;
 	int music_volume;
+	std::string name;
 }game_settings;
 
 void read_game_settings(game_settings *settings);

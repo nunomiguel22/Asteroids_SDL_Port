@@ -20,20 +20,20 @@ void ast_spawn(asteroid asteroid_field[], player *player1) {
 			asteroid_field[i].size = LARGE;
 		else asteroid_field[i].size = MEDIUM;
 
-		asteroid_field[i].position.x = rand() % math_h_positive_bound;
-		asteroid_field[i].position.y = rand() % math_v_positive_bound;
+		asteroid_field[i].position.x = (float)(rand() % math_h_positive_bound);
+		asteroid_field[i].position.y = (float)(rand() % math_v_positive_bound);
 
 		/* Randomizes velocity/direction, smaller asteroids are always faster */
 		if (asteroid_field[i].size == MEDIUM) {
-			asteroid_field[i].velocity.setX(rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY);
-			asteroid_field[i].velocity.setY(rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY);
+			asteroid_field[i].velocity.setX((float)(rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY));
+			asteroid_field[i].velocity.setY((float)(rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY));
 		}
 		else {
-			asteroid_field[i].velocity.setX(rand() % (LARGE_ASTEROID_MAX_VELOCITY - LARGE_ASTEROID_MIN_VELOCITY) + LARGE_ASTEROID_MIN_VELOCITY);
-			asteroid_field[i].velocity.setY(rand() % (LARGE_ASTEROID_MAX_VELOCITY - LARGE_ASTEROID_MIN_VELOCITY) + LARGE_ASTEROID_MIN_VELOCITY);
+			asteroid_field[i].velocity.setX((float)(rand() % (LARGE_ASTEROID_MAX_VELOCITY - LARGE_ASTEROID_MIN_VELOCITY) + LARGE_ASTEROID_MIN_VELOCITY));
+			asteroid_field[i].velocity.setY((float)(rand() % (LARGE_ASTEROID_MAX_VELOCITY - LARGE_ASTEROID_MIN_VELOCITY) + LARGE_ASTEROID_MIN_VELOCITY));
 		}
 		
-		mvector2d random ((double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
+		mvector2d random ((float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
 		asteroid_field[i].velocity += random;
 
 		/* Randomizes position x/y sign*/
@@ -79,15 +79,16 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			/* Player laser to asteroid Collision */
 			for (unsigned int j = 0; j < AMMO; j++) {
 
-				if (player1->lasers[j].active()) {
-					mpoint2d laserpos = player1->lasers[j].getposition();
+				if (player1->lasers[j].is_active()) {
+					mpoint2d laserpos = player1->lasers[j].get_position();
 					mvector2d v_ast_laser(laserpos, asteroid_field[i].position);
 					if (v_ast_laser.magnitude() <= asteroid_field[i].hit_radius) {
-						player1->hit_reg = true;
+						player1->status |= BIT(2);
 						collision = true;
 						asteroid_field[i].active = false;
-						player1->lasers[j].setstatus(false);
+						player1->lasers[j].deactivate();
 						asteroid_field[i].death_timer = (unsigned int)(ASTEROID_DEATH_DURATION);
+
 						if (asteroid_field[i].size == LARGE) {
 							player1->score += 50;
 							ast_fragment(asteroid_field, i);
@@ -101,18 +102,18 @@ int ast_collision(asteroid asteroid_field[], player *player1, player *alien) {
 			}
 			/* Player ship to asteroid Collision */
 			mvector2d v_ast_ship(player1->pivot, asteroid_field[i].position);
-			double total_radius = player1->hit_radius + asteroid_field[i].hit_radius;
+			float total_radius = player1->hit_radius + asteroid_field[i].hit_radius;
 			if (total_radius > v_ast_ship.magnitude()) {
 				collision = true;
 				asteroid_field[i].active = false;
 				if (asteroid_field[i].size == LARGE) {
-					if (!player1->invulnerability) {
+					if (!(player1->status & BIT(3))) {
 						player1->hp -= 30;
 						player1->score += 50;
 					}
 				}
 				else {
-					if (!player1->invulnerability) {
+					if (!(player1->status & BIT(3))) {
 						player1->hp -= 15;
 						player1->score += 100;
 					}
@@ -160,8 +161,8 @@ void ast_fragment(asteroid asteroid_field[], int ast_index) {
 
 	/* Fragments large asteroids into two smaller asteroids with random movement */
 	int frag_counter = 0;
-	double x = asteroid_field[ast_index].position.x;
-	double y = asteroid_field[ast_index].position.y;
+	float x = asteroid_field[ast_index].position.x;
+	float y = asteroid_field[ast_index].position.y;
 
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
 
@@ -172,10 +173,10 @@ void ast_fragment(asteroid asteroid_field[], int ast_index) {
 			asteroid_field[i].position.x = x;
 			asteroid_field[i].position.y = y;
 
-			asteroid_field[i].velocity.setX (rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY);
-			asteroid_field[i].velocity.setY (rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY);
+			asteroid_field[i].velocity.setX ((float)(rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY));
+			asteroid_field[i].velocity.setY ((float)(rand() % (MEDIUM_ASTEROID_MAX_VELOCITY - MEDIUM_ASTEROID_MIN_VELOCITY) + MEDIUM_ASTEROID_MIN_VELOCITY));
 			
-			mvector2d random((double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
+			mvector2d random((float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
 			asteroid_field[i].velocity += random;
 
 			int random_xsign = rand() % 10;

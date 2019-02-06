@@ -1,37 +1,65 @@
 #pragma once
 #include <string>
 #include <SDL_net.h>
+#include <time.h>
+#include "ship.h"
 
-
-#include "console.h"
 
 typedef struct {
-	char header[4];
-	int data_size;
-	uint8_t* data;
+	std::string header;
+	unsigned int timer_tick;
+	std::string ip;
+	uint16_t port;
+	player playern;
+
 }net_message;
 
 class UDPnet {
+	bool server_start;
+
 	bool exit;
-	bool started;
-	bool conn;
+	bool connected;
+
 	UDPsocket local_socket;
-	IPaddress remote_ip;
+	uint16_t local_port;
+	std::string public_address;
+	IPaddress remote_address;
+	
 	UDPpacket *incoming_packet;
 	UDPpacket *outgoing_packet;
-	console *cons;
+
 public:
 	UDPnet();
 	~UDPnet();
+
+	bool server_is_open() const;
+	bool port_is_open() const;
+	bool is_connected() const;
+	void close();
+
+	std::string get_public_ip() const;
+	uint16_t get_port() const;
+
+	bool port_open(uint16_t local_port);
+	void port_close();
+
+	bool fecth_public_ip();
+	void set_localhost();
+
+	void server_open();
+	void server_close();
+
+	bool resolve_ip(const std::string ip, uint16_t port);
+
+	bool send_packet(net_message &msg);
+	void listen_packet(net_message &msg);
+
+
+
 	bool quit();
-	bool initialized();
-	bool connected();
-	bool open_port(uint16_t local_port);
-	bool init_local(uint16_t local_port, console *con);
-	bool connect(const std::string ip, uint16_t port);
-	bool send_packet(std::string msg);
-	std::string listen_packet();
+	
+	
+	
+
 };
 
-
-void start_receiving(int id, UDPnet &udpnet, console &console);

@@ -3,7 +3,7 @@
 
 int load_sounds(sound_data *sounds, int eff_vol, int mus_vol, console *cons) {
 
-	cons->write_to_log("LOADING SOUND FILES");
+	cons->log_push("LOADING SOUND FILES");
 	std::string file;
 
 	/* Effects */
@@ -12,91 +12,100 @@ int load_sounds(sound_data *sounds, int eff_vol, int mus_vol, console *cons) {
 	sounds->laser = Mix_LoadWAV(file.c_str());
 	if (sounds->laser == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_SOUNDS_PATH "menu_tick.wav";
+	sounds->menu_tick = Mix_LoadWAV(file.c_str());
+	if (sounds->menu_tick == NULL) {
+		std::string error = SDL_GetError();
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "Pop.wav";
 	sounds->pop = Mix_LoadWAV(file.c_str());
 	if (sounds->pop == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "Beep_Short.wav";
 	sounds->Beep_Short = Mix_LoadWAV(file.c_str());
 	if (sounds->Beep_Short == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 	
 	file = FILE_SOUNDS_PATH "thruster.wav";
 	sounds->thrust = Mix_LoadWAV(file.c_str());
 	if (sounds->thrust == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "teleport.wav";
 	sounds->teleport = Mix_LoadWAV(file.c_str());
 	if (sounds->teleport == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "alien_spawn.wav";
 	sounds->alien_spawn = Mix_LoadWAV(file.c_str());
 	if (sounds->alien_spawn == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "ship_explosion.wav";
 	sounds->ship_expl = Mix_LoadWAV(file.c_str());
 	if (sounds->ship_expl == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "alien_laser.wav";
 	sounds->alien_laser = Mix_LoadWAV(file.c_str());
 	if (sounds->alien_laser == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "cdowna.wav";
 	sounds->cdowna = Mix_LoadWAV(file.c_str());
 	if (sounds->cdowna == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "cdownb.wav";
 	sounds->cdownb = Mix_LoadWAV(file.c_str());
 	if (sounds->cdownb == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	/* Music */
 
@@ -104,22 +113,22 @@ int load_sounds(sound_data *sounds, int eff_vol, int mus_vol, console *cons) {
 	sounds->kawaii = Mix_LoadMUS(file.c_str());
 	if (sounds->kawaii == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_SOUNDS_PATH "Galaxia.wav";
 	sounds->galaxia = Mix_LoadMUS(file.c_str());
 	if (sounds->galaxia == NULL) {
 		std::string error = SDL_GetError();
-		cons->write_to_log("Couldn't load \"" + file + "\", error: " + error);
+		cons->log_push("Couldn't load \"" + file + "\", error: " + error);
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
-	cons->write_to_log("SOUND FILES LOADED");
-	cons->write_to_log(" ");
+	cons->log_push("SOUND FILES LOADED");
+	cons->log_push(" ");
 
 	Mix_VolumeChunk(sounds->Beep_Short, (MIX_MAX_VOLUME >> 3) * eff_vol);
 	Mix_VolumeChunk(sounds->laser, (MIX_MAX_VOLUME >> 3) * eff_vol);
@@ -128,6 +137,7 @@ int load_sounds(sound_data *sounds, int eff_vol, int mus_vol, console *cons) {
 	Mix_VolumeChunk(sounds->teleport, (MIX_MAX_VOLUME >> 3) * eff_vol);
 	Mix_VolumeChunk(sounds->alien_spawn, (MIX_MAX_VOLUME >> 3) * eff_vol);
 	Mix_VolumeChunk(sounds->thrust, (MIX_MAX_VOLUME >> 6) * eff_vol);
+	Mix_VolumeChunk(sounds->menu_tick, (MIX_MAX_VOLUME >> 4) * eff_vol);
 	Mix_VolumeChunk(sounds->ship_expl, (MIX_MAX_VOLUME * eff_vol));
 	Mix_VolumeChunk(sounds->cdowna, (MIX_MAX_VOLUME >> 3) * eff_vol);
 	Mix_VolumeChunk(sounds->cdownb, (MIX_MAX_VOLUME >> 3) * eff_vol);

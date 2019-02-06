@@ -19,7 +19,7 @@ typedef struct {
 	mvector2d velocity;			/**< @brief Asteroid velocity vector */
 
 	bool active;				/**< @brief Asteroid status */
-	double hit_radius;			/**< @brief Asteroid hit radius for collisions */
+	float hit_radius;			/**< @brief Asteroid hit radius for collisions */
 	unsigned int death_timer;	/**< @brief Asteroid death timer for death animation */
 	int death_frame;
 	int degrees;				/**< @brief Asteroid rotation, for graphical purposes only */

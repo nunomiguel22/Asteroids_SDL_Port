@@ -15,6 +15,7 @@ typedef struct {
 	Mix_Chunk *Beep_Short;
 	Mix_Chunk *cdowna;
 	Mix_Chunk *cdownb;
+	Mix_Chunk *menu_tick;
 	
 
 }sound_data;

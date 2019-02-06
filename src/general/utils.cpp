@@ -2,6 +2,7 @@
 
 
 #include "utils.h"
+
 #pragma warning(disable:4996) //Ignores Visual Studio's f_open error, comment if using another compiler
 
 void read_game_settings(game_settings *settings) {
@@ -35,6 +36,8 @@ void read_game_settings(game_settings *settings) {
 	file >> settings->music_volume;
 	file.ignore(16);
 	file >> settings->effects_volume;
+	file.ignore(5);
+	file >> settings->name;
 
 	file.close();
 }
@@ -51,6 +54,7 @@ void reset_game_settings(game_settings *settings) {
 	settings->music_volume = 2;
 	settings->effects_volume = 3;
 	settings->fps = 1;
+	settings->name = "Default player";
 }
 
 void save_game_settings(game_settings *settings) {
@@ -68,7 +72,8 @@ void save_game_settings(game_settings *settings) {
 	file << "fps " << settings->fps << std::endl;
 	file << "fps_counter " << settings->fps_counter << std::endl;
 	file << "music_volume " << settings->music_volume << std::endl;
-	file << "effects_volume " << settings->effects_volume;
+	file << "effects_volume " << settings->effects_volume << std::endl;
+	file << "name " << settings->name;
 
 	file.close();
 }

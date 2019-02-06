@@ -4,22 +4,23 @@
 /* Lasers */
 
 class weapon {
+private:
+
 	mpoint2d position;
 	mvector2d force;
 	float travel_angle;
 	bool actv;
+
 public:
+	weapon();
+	~weapon();
 
-	mpoint2d getposition();
-	mvector2d getforce();
-	bool active();
-	float get_travel_angle();
+	bool is_active() const;
+	mpoint2d get_position() const; 
+	float get_angle() const;
 
-	void setposition(mpoint2d pos);
-	void setforce(mvector2d force);
-	void setstatus(bool act);
-	void set_travel_angle(float angle);
+	void activate(mpoint2d position, mvector2d force, float angle);
+	void deactivate();
 
-	int checkbounds();
-	void updateposition();
+	int update();
 };

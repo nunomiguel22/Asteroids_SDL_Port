@@ -5,6 +5,7 @@
 #include "renderer.h"
 #include "mvector.h"
 
+
 #define BMP_ID 0x4D42
 
 Bitmap::~Bitmap() {}
@@ -118,7 +119,7 @@ void Bitmap::draw(int x, int y) {
 		}
 }
 
-void  Bitmap::draw_transform(int gx, int gy, double rotation_degrees, BMP_ALIGN alignment) {
+void  Bitmap::draw_transform(int gx, int gy, float rotation_degrees, BMP_ALIGN alignment) {
 
 	if (pixel_data == NULL)
 		return;
@@ -149,7 +150,7 @@ void  Bitmap::draw_transform(int gx, int gy, double rotation_degrees, BMP_ALIGN 
 			uint32_t color = 0;
 			int x = j - center_x;
 			int y = center_y - i;
-			mvector2d point(x, y);
+			mvector2d point((float)x, (float)y);
 			point.rotate(-rotation_degrees);
 			x = (int)(round(point.getX() + center_x));
 			y = (int)(round(center_y - point.getY()));
@@ -160,239 +161,310 @@ void  Bitmap::draw_transform(int gx, int gy, double rotation_degrees, BMP_ALIGN 
 		}
 }
 
+void Bitmap::draw_background(int x, int y) {
+
+	if (pixel_data == NULL)
+		return;
+
+	if (x < 0 || x + dibheader.width > hres || y < 0 || y + dibheader.height > vres)
+		return;
+
+	for (unsigned int i = 0; i < dibheader.height; ++i)
+		for (unsigned int j = 0; j < dibheader.width; ++j) {
+			uint32_t color = pixel_data[(i * dibheader.width) + j];
+			if (color >> 8)
+				draw_pixel(x + j, y + i, color);
+		}
+}
+
 int load_bitmaps(bitmap_data *bmp, console *cons) {
 
-	std::string file;
-	cons->write_to_log("LOADING BMP ASSETS");
 
-	/* User interface elements*/
+
+	std::string file;
+	cons->log_push("LOADING BMP ASSETS");
+
 
 	file = FILE_UI_PATH"splash.bmp";
 	if (bmp->splash.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"MenuBackground.bmp";
 	if (bmp->menubackground.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"ui_status.bmp";
 	if (bmp->ui_status.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"highscoresbackground.bmp";
 	if (bmp->hsbackground.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
-	file = FILE_UI_PATH"playbutton.bmp";
-	if (bmp->playbutton.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+	file = FILE_UI_PATH"nm_button.bmp";
+	if (bmp->nm_button.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
 
-	file = FILE_UI_PATH"optionsbutton.bmp";
-	if (bmp->optionsbutton.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
-		return 1;
-	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
 
-	file = FILE_UI_PATH"quitbutton.bmp";
-	if (bmp->quitbutton.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+	file = FILE_UI_PATH"hl_button.bmp";
+	if (bmp->hl_button.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"options.bmp";
 	if (bmp->options.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"deathscreen.bmp";
 	if (bmp->death_screen.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"deathscreenhighscore.bmp";
 	if (bmp->death_screen_highscore.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"boxticked.bmp";
 	if (bmp->boxticked.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"pausemessage.bmp";
 	if (bmp->pause_message.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"parrow.bmp";
 	if (bmp->p_arrow.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"cursor.bmp";
 	if (bmp->cursor.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"console.bmp";
 	if (bmp->gameconsole.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_UI_PATH"slidemarker.bmp";
 	if (bmp->slidemarker.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 
 	/* Textures */
 
 	file = FILE_TEXTURES_PATH"gamebackground.bmp";
 	if (bmp->game_background.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"mp_background.bmp";
+	if (bmp->mp_background.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"mp_hpbaroutline.bmp";
+	if (bmp->mp_hpbaroutline.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"mp_nameplate.bmp";
+	if (bmp->mp_nameplate.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"mp_scoreplate.bmp";
+	if (bmp->mp_scoreplate.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"alienship.bmp";
 	if (bmp->alien_ship.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"mediumscore.bmp";
 	if (bmp->medium_score.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"largescore.bmp";
 	if (bmp->large_score.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"alienscore.bmp";
 	if (bmp->alien_score.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"LargeAsteroid.bmp";
 	if (bmp->large_asteroid.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"MediumAsteroid.bmp";
 	if (bmp->medium_asteroid.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"pix_ship_blue.bmp";
 	if (bmp->pix_ship_blue.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"pix_ship_blue_bt.bmp";
 	if (bmp->pix_ship_blue_bt.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"pix_ship_blue_pt.bmp";
 	if (bmp->pix_ship_blue_pt.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"pix_ship_blue_st.bmp";
 	if (bmp->pix_ship_blue_st.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"pix_ship_blue_teleport.bmp";
 	if (bmp->pix_ship_blue_tele.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_alt.bmp";
+	if (bmp->pix_ship_alt.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_alt_bt.bmp";
+	if (bmp->pix_ship_alt_bt.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_alt_pt.bmp";
+	if (bmp->pix_ship_alt_pt.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_alt_st.bmp";
+	if (bmp->pix_ship_alt_st.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
+
+	file = FILE_TEXTURES_PATH"pix_ship_alt_teleport.bmp";
+	if (bmp->pix_ship_alt_tele.load(file)) {
+		cons->log_push("Couldn't load \"" + file + "\"");
+		return 1;
+	}
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"delta.bmp";
 	if (bmp->delta.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"delta_hit.bmp";
 	if (bmp->delta_hit.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"laser_blue.bmp";
 	if (bmp->laser_blue.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 	file = FILE_TEXTURES_PATH"laser_red.bmp";
 	if (bmp->laser_red.load(file)) {
-		cons->write_to_log("Couldn't load \"" + file + "\"");
+		cons->log_push("Couldn't load \"" + file + "\"");
 		return 1;
 	}
-	else cons->write_to_log("Loaded \"" + file + "\"");
+	else cons->log_push("Loaded \"" + file + "\"");
 
 
 	/* Animations */
@@ -401,10 +473,10 @@ int load_bitmaps(bitmap_data *bmp, console *cons) {
 		std::stringstream ss1;
 		ss1 << FILE_ANIMATIONS_PATH "/explosion/exp" << i << ".bmp";
 		if (bmp->ship_expl[i - 1].load(ss1.str())) {
-			cons->write_to_log("Couldn't load \"" + ss1.str() + "\"");
+			cons->log_push("Couldn't load \"" + ss1.str() + "\"");
 			return 1;
 		}
-		else cons->write_to_log("Loaded \"" + ss1.str() + "\"");
+		else cons->log_push("Loaded \"" + ss1.str() + "\"");
 
 	}
 
@@ -412,14 +484,14 @@ int load_bitmaps(bitmap_data *bmp, console *cons) {
 		std::stringstream ss2;
 		ss2 << "Assets/animations/astdest/astdest" << i << ".bmp";
 		if (bmp->ast_dest[i - 1].load(ss2.str())) {
-			cons->write_to_log("Couldn't load \"" + ss2.str() + "\"");
+			cons->log_push("Couldn't load \"" + ss2.str() + "\"");
 			return 1;
 		}
-		else cons->write_to_log("Loaded \"" + ss2.str() + "\"");
+		else cons->log_push("Loaded \"" + ss2.str() + "\"");
 	}
 
-	cons->write_to_log("BMP ASSETS LOADED");
-	cons->write_to_log(" ");
+	cons->log_push("BMP ASSETS LOADED");
+	cons->log_push(" ");
 
 	return 0;
 }
@@ -431,9 +503,8 @@ void free_bitmaps(bitmap_data *bmp) {
 	free(bmp->menubackground.get_data());
 	free(bmp->ui_status.get_data());
 	free(bmp->hsbackground.get_data());
-	free(bmp->playbutton.get_data());
-	free(bmp->optionsbutton.get_data());
-	free(bmp->quitbutton.get_data());
+	free(bmp->hl_button.get_data());
+	free(bmp->nm_button.get_data());
 	free(bmp->options.get_data());
 	free(bmp->death_screen.get_data());
 	free(bmp->death_screen_highscore.get_data());
@@ -473,19 +544,19 @@ void free_bitmaps(bitmap_data *bmp) {
 
 Font::Font(std::string filepath, int sz) {
 	font = TTF_OpenFont(filepath.c_str(), sz);
-	size = sz;
+	f_size = sz;
 }
 
-Font::~Font() { TTF_CloseFont(font); }
+Font::~Font() {}
 
 TTF_Font * Font::get_font_data() const { return font; }
-int Font::get_size() const { return size; }
+int Font::size() const { return f_size; }
 
 int Font::load(std::string filepath, int sz) {
 	font = TTF_OpenFont(filepath.c_str(), sz);
 	if (font == NULL)
 		return 1;
-	size = sz;
+	f_size = sz;
 	return 0;
 }
 
@@ -564,7 +635,7 @@ void Font::render_string(unsigned int x, unsigned int y, std::string line, uint3
 
 }
 
-void Font::render_number(double number, int x, int y, uint32_t color) {
+void Font::render_number(float number, int x, int y, uint32_t color) {
 
 	std::stringstream ss;
 	ss << number;
