@@ -15,5 +15,3 @@ Game demo
 ![Screenshot](demo/singleplayer.jpg)
 ![Screenshot](demo/multiplayer.jpg)
 
-Original Minix Project demo
-![Screenshot](demo/demo.gif)
