@@ -3,7 +3,7 @@
 
 #include "graphics.h"
 #include "renderer.h"
-#include "mvector.h"
+#include "../general/mvector.h"
 
 
 #define BMP_ID 0x4D42
@@ -128,7 +128,7 @@ void  Bitmap::draw_transform(int gx, int gy, float rotation_degrees, BMP_ALIGN a
 	int width = dibheader.width;
 	int y_comp = 0;
 	int x_comp = 0;
-	if (alignment = BMP_CENTER) {
+	if (alignment == BMP_CENTER) {
 		x_comp = width / 2;
 		y_comp = height / 2;
 	}

@@ -1,8 +1,8 @@
 #include <time.h>
+#define SDL_MAIN_HANDLED
 
-
-#include "renderer.h"
-#include "game.h"
+#include "./renderer/renderer.h"
+#include "./game/game.h"
 
 /*
 	This project requires SDL and SDL Libraries SDLNet, SDL_TTF, SDL_MIXER and the CTPL Library.

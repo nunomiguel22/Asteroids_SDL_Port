@@ -1,11 +1,11 @@
-#include <SDL.h>
-#include <SDL_ttf.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <sstream>
 #include <string>
 #include <queue>
 
 #include "renderer.h"
-#include "macros.h"
+#include "../general/macros.h"
 
 
 //#include <iostream> //DEBUG
@@ -259,7 +259,8 @@ void render_mp_hp_bars(player *p, int x, int y) {
 }
 
 void render_laser(player *p, Bitmap *laser, weapon *l) {
-	mpoint2d ws_laser = vector_translate_gfx(&l->get_position(), hres, vres);
+	mpoint2d laser_pos = l->get_position();
+	mpoint2d ws_laser = vector_translate_gfx(&laser_pos, hres, vres);
 	laser->draw_transform((int)ws_laser.x, (int)ws_laser.y, l->get_angle(), BMP_CENTER);
 }
 

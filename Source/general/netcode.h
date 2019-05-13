@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
-#include <SDL_net.h>
+#include <SDL2/SDL_net.h>
 #include <time.h>
-#include "ship.h"
+#include "../entities/ship.h"
 
 
 typedef struct {

@@ -1,5 +1,5 @@
-#include "game.h"
-#include "renderer.h"
+#include "../game/game.h"
+#include "../renderer/renderer.h"
 
 
 void options_menu_handler(game_data *game) {

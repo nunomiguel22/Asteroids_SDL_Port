@@ -1,6 +1,6 @@
 #pragma once
 
-#include "asteroidfield.h"
+#include "../entities/asteroidfield.h"
 
 /** @brief Various game related timers */
 typedef struct {

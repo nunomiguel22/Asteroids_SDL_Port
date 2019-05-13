@@ -1,18 +1,18 @@
 #pragma once
 #include <ctpl_stl.h>
-#include <SDL.h>
-#include <SDL_mixer.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 #include "timers.h"
-#include "mvector.h"
-#include "graphics.h"
-#include "macros.h"
-#include "ship.h"
-#include "asteroidfield.h"
-#include "sound.h"
-#include "utils.h"
-#include "console.h"
-#include "netcode.h"
+#include "../general/mvector.h"
+#include "../renderer/graphics.h"
+#include "../general/macros.h"
+#include "../entities/ship.h"
+#include "../entities/asteroidfield.h"
+#include "../general/sound.h"
+#include "../general/utils.h"
+#include "../general/console.h"
+#include "../general/netcode.h"
 
 
 typedef enum { KEYBOARD, MOUSE, TIMER, EV_IDLE} event_type;

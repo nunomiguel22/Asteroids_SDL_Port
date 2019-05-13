@@ -1,6 +1,6 @@
 #pragma once
 #include "ship.h"
-#include "timers.h"
+#include "../game/timers.h"
 
 /* Alien ship */
 

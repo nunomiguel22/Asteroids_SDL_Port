@@ -2,9 +2,9 @@
 #include <stdint.h>
 
 
-#include "game.h"
-#include "mvector.h"
-#include "console.h"
+#include "../game/game.h"
+#include "../general/mvector.h"
+#include "../general/console.h"
 
 /* SDL functions */
 uint32_t* init_sdl(game_settings *settings, console *cons);

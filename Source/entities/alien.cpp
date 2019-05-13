@@ -3,7 +3,7 @@
 
 #include "alien.h"
 #include "weapon.h"
-#include "mvector.h"
+#include "../general/mvector.h"
 
 /* ALIEN SHIP */
 

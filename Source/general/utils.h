@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ship.h"
+#include "../entities/ship.h"
 
 typedef struct {
 	uint32_t hresolution;

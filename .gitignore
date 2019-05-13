@@ -1,0 +1,9 @@
+.vscode/
+Assets/
+*.exe
+*.log
+gamefiles/
+*.o
+*.dll
+*.txt
+*.ico

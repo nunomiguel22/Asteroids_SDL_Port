@@ -1,11 +1,9 @@
-#include <SDL.h>
-#include <SDL_mixer.h>
 #include <time.h>
 
 
 #include "game.h"
-#include "renderer.h"
-#include "alien.h"
+#include "../renderer/renderer.h"
+#include "../entities/alien.h"
 
 #include <iostream> //DEGUB
 

@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <ShellApi.h>
-#include "game.h"
-#include "renderer.h"
+#include "../game/game.h"
+#include "../renderer/renderer.h"
 
 void main_menu_handler(game_data *game){
 

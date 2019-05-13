@@ -2,10 +2,10 @@
 
 
 #include "game.h"
-#include "renderer.h"
-#include "alien.h"
-#include "netcode.h"
-#include "ship.h"
+#include "../renderer/renderer.h"
+#include "../entities/alien.h"
+#include "../general/netcode.h"
+#include "../entities/ship.h"
 
 int game_data_init(game_data *game) {
 

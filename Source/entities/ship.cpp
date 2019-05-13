@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "ship.h"
-#include "graphics.h"
+#include "../renderer/graphics.h"
 
 
 void ship_spawn(player *p) {

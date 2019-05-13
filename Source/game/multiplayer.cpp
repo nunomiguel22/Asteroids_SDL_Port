@@ -1,7 +1,7 @@
 #include <sstream>
 
 #include "game.h"
-#include "renderer.h"
+#include "../renderer/renderer.h"
 
 //#include <iostream> //DEBUG
 void start_listening(int id, game_data &game) {

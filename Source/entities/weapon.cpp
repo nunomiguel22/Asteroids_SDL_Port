@@ -1,5 +1,5 @@
 #include "weapon.h"
-#include "macros.h"
+#include "../general/macros.h"
 
 weapon::weapon(){}
 

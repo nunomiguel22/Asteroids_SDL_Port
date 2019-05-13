@@ -1,10 +1,10 @@
 #pragma once
 #include <stdint.h>
 #include <string>
-#include <SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 
-#include "console.h"
-#include "macros.h"
+#include "../general/console.h"
+#include "../general/macros.h"
 
 typedef enum { BMP_TOPLEFT, BMP_CENTER } BMP_ALIGN;
 

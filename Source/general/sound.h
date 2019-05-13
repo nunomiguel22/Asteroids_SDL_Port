@@ -1,5 +1,5 @@
 #pragma once
-#include "SDL_mixer.h"
+#include "SDL2/SDL_mixer.h"
 #include "console.h"
 
 typedef struct {

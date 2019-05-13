@@ -1,9 +1,9 @@
 #include <fstream>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
-#include "console.h"
-#include "renderer.h"
-#include "macros.h"
+#include "../general/console.h"
+#include "../renderer/renderer.h"
+#include "../general/macros.h"
 
 
 console::console() {

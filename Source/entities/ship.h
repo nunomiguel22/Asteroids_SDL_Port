@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <string>
 
-#include "macros.h"
-#include "mvector.h"
+#include "../general/macros.h"
+#include "../general/mvector.h"
 #include "weapon.h"
 
 

@@ -1,6 +1,6 @@
 #include "game.h"
-#include "renderer.h"
-#include "alien.h"
+#include "../renderer/renderer.h"
+#include "../entities/alien.h"
 
 void singleplayer_event_handler(game_data* game) {
 	switch (game->event) {
